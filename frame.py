@@ -65,13 +65,13 @@ class Frame(wx.Frame):
 
     def __init__(self, parent=None, id=-1, title='Editor',
                  pos=wx.DefaultPosition, size=wx.DefaultSize, 
-                 style=wx.DEFAULT_FRAME_STYLE,useSlices=False):
+                 style=wx.DEFAULT_FRAME_STYLE,shellName='PyCrust'):
         """Create a Frame instance."""
         wx.Frame.__init__(self, parent, id, title, pos, size, style)
         self.CreateStatusBar()
         self.SetStatusText('Frame')
         import images
-        self.SetIcon(images.getPyIcon(useSlices=useSlices))
+        self.SetIcon(images.getPyIcon(shellName=shellName))
         self.__createMenus()
 
         self.iconized = False

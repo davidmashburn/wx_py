@@ -11,8 +11,6 @@ __author__ = "Patrick K. O'Brien <pobrien@orbtech.com> / David N. Mashburn <CHOO
 __cvsid__ = "$Id: PySlices.py 36607 2005-12-30 23:02:03Z RD $" # Hmmm...
 __revision__ = "$Revision: 36607 $"[11:-2] #Hmmm...
 
-import wxversion
-wxversion.select('2.8')
 import wx
 
 class App(wx.App):
@@ -21,7 +19,7 @@ class App(wx.App):
     def OnInit(self):
         import os
         import wx
-        import myPyCrust as py
+        from wx import py
         
         self.SetAppName("pyslices")
         confDir = wx.StandardPaths.Get().GetUserDataDir()
@@ -31,7 +29,7 @@ class App(wx.App):
         self.config = wx.FileConfig(localFilename=fileName)
         self.config.SetRecordDefaults(True)
         
-        self.frame = py.crust.CrustFrame(config=self.config, dataDir=confDir,title='PySlices',useSlices=True)
+        self.frame = py.crust.CrustFrame(config=self.config, dataDir=confDir,title='PySlices',shellName='PySlices')
 ##        self.frame.startupFileName = os.path.join(confDir,'pycrust_startup')
 ##        self.frame.historyFileName = os.path.join(confDir,'pycrust_history')
         self.frame.Show()
