@@ -16,6 +16,7 @@ import editwindow
 from filling import Filling
 import frame
 from shell import Shell
+from slices import Shell as Slice_Shell
 from version import VERSION
 
 
@@ -32,6 +33,7 @@ class Crust(wx.SplitterWindow):
                  rootIsNamespace=True, intro='', locals=None,
                  InterpClass=None,
                  startupScript=None, execStartupScript=True,
+                 useSlices=False,
                  *args, **kwds):
         """Create Crust instance."""
         wx.SplitterWindow.__init__(self, parent, id, pos, size, style, name)
@@ -43,11 +45,18 @@ class Crust(wx.SplitterWindow):
         style = self.GetWindowStyle()
         self.SetWindowStyle(style & ~wx.TAB_TRAVERSAL)
         
-        self.shell = Shell(parent=self, introText=intro,
-                           locals=locals, InterpClass=InterpClass,
-                           startupScript=startupScript,
-                           execStartupScript=execStartupScript,
-                           *args, **kwds)
+        if useSlices:
+            self.shell = Slice_Shell(parent=self, introText=intro,
+                                     locals=locals, InterpClass=InterpClass,
+                                     startupScript=startupScript,
+                                     execStartupScript=execStartupScript,
+                                     *args, **kwds)
+        else:
+            self.shell = Shell(parent=self, introText=intro,
+                               locals=locals, InterpClass=InterpClass,
+                               startupScript=startupScript,
+                               execStartupScript=execStartupScript,
+                               *args, **kwds)
         self.editor = self.shell
         if rootObject is None:
             rootObject = self.shell.interp.locals
@@ -285,15 +294,16 @@ class CrustFrame(frame.Frame, frame.ShellFrameMixin):
                  rootObject=None, rootLabel=None, rootIsNamespace=True,
                  locals=None, InterpClass=None,
                  config=None, dataDir=None,
+                 useSlices=False,
                  *args, **kwds):
         """Create CrustFrame instance."""
-        frame.Frame.__init__(self, parent, id, title, pos, size, style)
+        frame.Frame.__init__(self, parent, id, title, pos, size, style,useSlices=useSlices)
         frame.ShellFrameMixin.__init__(self, config, dataDir)
         
         if size == wx.DefaultSize:
             self.SetSize((800, 600))
 
-        intro = 'PyCrust %s - The Flakiest Python Shell' % VERSION
+        intro = ['PyCrust','PySlices'][useSlices]+' %s - The Flakiest Python Shell' % VERSION
         self.SetStatusText(intro.replace('\n', ', '))
         self.crust = Crust(parent=self, intro=intro,
                            rootObject=rootObject,
@@ -303,6 +313,7 @@ class CrustFrame(frame.Frame, frame.ShellFrameMixin):
                            InterpClass=InterpClass,
                            startupScript=self.startupScript,
                            execStartupScript=self.execStartupScript,
+                           useSlices=useSlices,
                            *args, **kwds)
         self.shell = self.crust.shell
 

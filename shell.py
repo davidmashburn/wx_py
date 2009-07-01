@@ -24,8 +24,11 @@ from pseudo import PseudoFileIn
 from pseudo import PseudoFileOut
 from pseudo import PseudoFileErr
 from version import VERSION
+from magic import magic
+from path import ls,cd,pwd
 
 sys.ps3 = '<-- '  # Input prompt.
+USE_MAGIC=True
 
 NAVKEYS = (wx.WXK_END, wx.WXK_LEFT, wx.WXK_RIGHT,
            wx.WXK_UP, wx.WXK_DOWN, wx.WXK_PRIOR, wx.WXK_NEXT)
@@ -217,6 +220,16 @@ class ShellFacade:
         return list
 
 
+#DNM
+DISPLAY_TEXT="""
+Author: %r
+Py Version: %s
+Py Shell Revision: %s
+Py Interpreter Revision: %s
+Python Version: %s
+wxPython Version: %s
+wxPython PlatformInfo: %s
+Platform: %s"""
 
 class Shell(editwindow.EditWindow):
     """Shell based on StyledTextCtrl."""
@@ -376,6 +389,9 @@ class Shell(editwindow.EditWindow):
         import __builtin__
         __builtin__.close = __builtin__.exit = __builtin__.quit = \
             'Click on the close button to leave the application.'
+        __builtin__.cd = cd
+        __builtin__.ls = ls
+        __builtin__.pwd = pwd
 
 
     def quit(self):
@@ -405,15 +421,8 @@ class Shell(editwindow.EditWindow):
 
     def about(self):
         """Display information about Py."""
-        text = """
-Author: %r
-Py Version: %s
-Py Shell Revision: %s
-Py Interpreter Revision: %s
-Python Version: %s
-wxPython Version: %s
-wxPython PlatformInfo: %s
-Platform: %s""" % \
+        #DNM
+        text = DISPLAY_TEXT % \
         (__author__, VERSION, self.revision, self.interp.revision,
          sys.version.split()[0], wx.VERSION_STRING, str(wx.PlatformInfo),
          sys.platform)
@@ -600,7 +609,7 @@ Platform: %s""" % \
             self.CopyWithPromptsPrefixed()
 
         # Home needs to be aware of the prompt.
-        elif key == wx.WXK_HOME:
+        elif controlDown and key == wx.WXK_HOME:
             home = self.promptPosEnd
             if currpos > home:
                 self.SetCurrentPos(home)
@@ -610,6 +619,23 @@ Platform: %s""" % \
             else:
                 event.Skip()
 
+        # Home needs to be aware of the prompt.
+        elif key == wx.WXK_HOME:
+            home = self.promptPosEnd
+            if currpos > home:
+                [line_str,line_len] = self.GetCurLine()
+                pos=self.GetCurrentPos()
+                if line_str[:4] in [sys.ps1,sys.ps2,sys.ps3]:
+                    self.SetCurrentPos(pos+4-line_len)
+                    #self.SetCurrentPos(home)
+                    if not selecting and not shiftDown:
+                        self.SetAnchor(pos+4-line_len)
+                        self.EnsureCaretVisible()
+                else:
+                    event.Skip()
+            else:
+                event.Skip()
+        
         #
         # The following handlers modify text, so we need to see if
         # there is a selection that includes text prior to the prompt.
@@ -632,21 +658,21 @@ Platform: %s""" % \
             self.PasteAndRun()
             
         # Replace with the previous command from the history buffer.
-        elif (controlDown and key == wx.WXK_UP) \
+        elif (controlDown and not shiftDown and key == wx.WXK_UP) \
                  or (altDown and key in (ord('P'), ord('p'))):
             self.OnHistoryReplace(step=+1)
             
         # Replace with the next command from the history buffer.
-        elif (controlDown and key == wx.WXK_DOWN) \
+        elif (controlDown and not shiftDown and key == wx.WXK_DOWN) \
                  or (altDown and key in (ord('N'), ord('n'))):
             self.OnHistoryReplace(step=-1)
             
         # Insert the previous command from the history buffer.
-        elif (shiftDown and key == wx.WXK_UP) and self.CanEdit():
+        elif (controlDown and shiftDown and key == wx.WXK_UP) and self.CanEdit():
             self.OnHistoryInsert(step=+1)
             
         # Insert the next command from the history buffer.
-        elif (shiftDown and key == wx.WXK_DOWN) and self.CanEdit():
+        elif (controlDown and shiftDown and key == wx.WXK_DOWN) and self.CanEdit():
             self.OnHistoryInsert(step=-1)
             
         # Search up the history for the text in front of the cursor.
@@ -671,10 +697,15 @@ Platform: %s""" % \
         
         # Don't allow line deletion.
         elif controlDown and key in (ord('L'), ord('l')):
+            # TODO : Allow line deletion eventually...
+            #event.Skip()
             pass
 
         # Don't allow line transposition.
         elif controlDown and key in (ord('T'), ord('t')):
+            # TODO : Allow line transposition eventually...
+            # TODO : Will have to adjust markers accordingly and test if allowed...
+            #event.Skip()
             pass
 
         # Basic navigation keys should work anywhere.
@@ -921,6 +952,11 @@ Platform: %s""" % \
         """Send command to the interpreter for execution."""
         if not silent:
             self.write(os.linesep)
+        
+        #DNM
+        if USE_MAGIC:
+            command=magic(command)
+         
         busy = wx.BusyCursor()
         self.waiting = True
         self.more = self.interp.push(command)
@@ -987,9 +1023,23 @@ Platform: %s""" % \
             self.promptPosEnd = self.GetCurrentPos()
             # Keep the undo feature from undoing previous responses.
             self.EmptyUndoBuffer()
-        # XXX Add some autoindent magic here if more.
+        
+        #DNM
+        # Autoindent magic
+        # Match the indent of the line above
+        # UNLESS the line above ends in a colon...then add four spaces
         if self.more:
-            self.write(' '*4)  # Temporary hack indentation.
+            line_num=self.GetCurrentLine()
+            previousLine=self.GetLine(line_num-1)[len(prompt):]
+            strip=previousLine.strip()
+            if len(strip)==0:
+                indent=previousLine.strip('\n').strip('\r') # because it is all whitespace!
+            else:
+                indent=previousLine[:(previousLine.find(previousLine.strip()[0]))]
+                if strip[-1]==':':
+                    indent+=' '*4
+            
+            self.write(indent)
         self.EnsureCaretVisible()
         self.ScrollToColumn(0)
 
@@ -1106,8 +1156,7 @@ Platform: %s""" % \
             # fallback.
             tippos = max(tippos, fallback)
             self.CallTipShow(tippos, tip)
-
-            
+        
     def OnCallTipAutoCompleteManually (self, shiftDown):
         """AutoComplete and Calltips manually."""
         if self.AutoCompActive():
@@ -1379,7 +1428,6 @@ Platform: %s""" % \
         config.WriteBool('View/ShowLineNumbers', self.lineNumbers)
         config.WriteInt('View/Zoom/Shell', self.GetZoom())
 
-
     def GetContextMenu(self):
         """
             Create and return a context menu for the shell.
@@ -1484,4 +1532,3 @@ Platform: %s""" % \
 ##             self.shell.SetSelection( pos, pos )
 
 ##         return result
-    

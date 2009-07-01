@@ -1,5 +1,37 @@
-0.9.5 (12/23/2005)
+0.9.6.8 (10/1/2009)
 -------------------
+Merged changes with SVN trunk.
+
+0.9.6.4 thru 0.9.6.6  (10/22/2008-4/27/2009)
+-------------------
+Added magic.py to handle some very simple "magic" commands:
+
+Now the command:
+"f 1"
+will be re-interpreted as:
+"f(1)"
+
+The command:
+"f 1,2,3,4"
+will be interpreted as:
+f(1,2,3,4)
+
+Special commands "ls","cd", and "pwd" are interpreted separately
+
+Works with slices.py and shell.py
+
+Also fixed auto-indent magic.
+
+0.9.6.1 thru 0.9.6.3 (10/21/2008)
+---------------------------------
+Added PySlices (slices.py and PySlices.py), a modified version of PyCrust.
+PySlices is a "notebook interface" multi-line shell, ala Sage or Mathematica.
+It uses Scintilla markers extensively, with red for input and blue for output.
+
+Modified crust.py to use a switch so it can load either a Shell or a Slices_Shell
+
+0.9.5 (12/23/2005)
+------------------
 
 Applied a series of enhancments by Franz Steinaeusler, Adi Sieker, and
 Sebastian Haase, up until their 7-31-2005 version.  (Their next
