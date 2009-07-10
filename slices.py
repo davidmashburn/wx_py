@@ -5,6 +5,10 @@ based on wxPython's wxStyledTextCtrl.
 Sponsored by Orbtech - Your source for Python programming expertise.
 Slices is a version of shell modified by David Mashburn."""
 
+# TODO :    FIXED! -- 99% of undo issue!!  Hooray!!
+# TODO :    FIXED! -- Obscure bug: when selecting, if you begin typing, markers are
+# TODO :               not preserved and undo does not catch all events
+# TODO :    FIXED! -- Tabs is not handled properly by undo system
 # TODO :    FIXED!--VERY obscure bug: when you push return, fold, unfold, hit delete, creates 2 slices!!!
 # TODO :    Make Ctrl-Home/End functionality equivalent
 # TODO :    Fix Undo -- messes up markers...
@@ -23,7 +27,7 @@ Slices is a version of shell modified by David Mashburn."""
 # TODO :        Add traits integration...
 # TODO :        Add current directory information...
 # TODO :    Slices:
-# TODO :        Enable arrows to move in slice -- Done!
+# TODO :        FIXED! -- Enable arrows to move in slice
 # TODO :        Really should only be able to select one kind of marker at a time
 # TODO :        Capture mouse clicks and key presses to reset sliceselecting...or smn else
 # TODO :        Make cut/copy/paste work with cells
@@ -129,7 +133,6 @@ USE_MAGIC=True
 
 NAVKEYS = (wx.WXK_END, wx.WXK_LEFT, wx.WXK_RIGHT,
            wx.WXK_UP, wx.WXK_DOWN, wx.WXK_PRIOR, wx.WXK_NEXT)
-
 
 class ShellFrame(frame.Frame, frame.ShellFrameMixin):
     """Frame containing the shell component."""
@@ -491,7 +494,6 @@ class Shell(editwindow.EditWindow):
         self.Bind(wx.EVT_MENU, lambda evt: self.Undo(), id=wx.ID_UNDO)
         self.Bind(wx.EVT_MENU, lambda evt: self.Redo(), id=wx.ID_REDO)
         
-
         # Assign handler for idle time.
         self.waiting = False
         self.Bind(wx.EVT_IDLE, self.OnIdle)
@@ -537,6 +539,10 @@ class Shell(editwindow.EditWindow):
                 self.MarkerAdd(i,OUTPUT_MIDDLE)
         
         self.SliceSelection=False
+        
+        #ADD UNDO
+        # Everywhere "ADD UNDO" appears, there may be new code needed to handle markers
+        self.EmptyUndoBuffer()
         
         wx.CallAfter(self.ScrollToLine, 0)
 
@@ -654,6 +660,16 @@ class Shell(editwindow.EditWindow):
         
         return commands
     
+    def MarkerSet(self,line,markerBitsSet):
+        """MarkerSet is the Set command for MarkerGet"""
+        markerBits=self.MarkerGet(line)
+        
+        numMarkers=14
+        for i in range(numMarkers):
+            if (markerBitsSet & (1<<i)) and not (markerBits & (1<<i)):
+                self.MarkerAdd(line,i)
+            elif not (markerBitsSet & (1<<i)) and (markerBits & (1<<i)):
+                self.MarkerDelete(line,i)
     def GetGroupingSlice(self,line_num=None):
         """Get the start/stop lines for the slice based on any line in the slice"""
         if line_num==None:
@@ -957,6 +973,39 @@ class Shell(editwindow.EditWindow):
         
         return True
     
+    def GetIOSelection(self):
+        started=False
+        start=0
+        end=self.GetLineCount()-1
+        type=None
+        for i in range(self.GetLineCount()):
+            if self.MarkerGet(i) & 1<<IO_SELECTING:
+                if started==False:
+                    start=i
+                    if self.MarkerGet(i) & INPUT_MASK:
+                        type='input'
+                    elif self.MarkerGet(i) & OUTPUT_MASK:
+                        type='output'
+                else:
+                    if self.MarkerGet(i) & INPUT_MASK:
+                        if type=='output':
+                            end=i-1
+                            break
+                    elif self.MarkerGet(i) & OUTPUT_MASK:
+                        if type=='input':
+                            end=i-1
+                            break
+                started=True
+            elif started==True:
+                end=i-1
+                break
+        
+        if started==False:
+            print 'No Selection!!'
+            self.SliceSelection=False
+        
+        return start,end
+    
     def MergeAdjacentSlices(self):
         """This function merges all adjacent selected slices.\nRight now, only IO Merging is allowed."""
         started=False
@@ -1069,7 +1118,7 @@ class Shell(editwindow.EditWindow):
 
         Only receives an event if OnKeyDown calls event.Skip() for the
         corresponding event."""
-
+        
         if self.noteMode:
             event.Skip()
             return
@@ -1081,6 +1130,7 @@ class Shell(editwindow.EditWindow):
         currpos = self.GetCurrentPos()
         stoppos = self.PositionFromLine(self.GetCurrentLine()) # NEED TO TEST
         # Return (Enter) needs to be ignored in this handler.
+        
         if key in [wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER]:
             pass
         elif key in self.autoCompleteKeys:
@@ -1090,7 +1140,14 @@ class Shell(editwindow.EditWindow):
             if self.AutoCompActive():
                 self.AutoCompCancel()
             command = self.GetTextRange(stoppos, currpos) + chr(key)
-            self.write(chr(key),type='Input')
+            
+            # write with undo wrapper...
+            cpos=self.GetCurrentPos()
+            s=chr(key)
+            self.UpdateUndoHistoryBefore('insert',s,cpos,cpos+len(s),forceNewAction=False)
+            self.write(s,type='Input')
+            self.UpdateUndoHistoryAfter()
+            
             if self.autoComplete:
                 self.autoCompleteShow(command)
         elif key == ord('('):
@@ -1102,20 +1159,56 @@ class Shell(editwindow.EditWindow):
             # the '(' to the end of the command.
             self.ReplaceSelection('')
             command = self.GetTextRange(stoppos, currpos) + '('
-            self.write('(',type='Input')
+            
+            # write with undo wrapper...
+            cpos=self.GetCurrentPos()
+            s='('
+            self.UpdateUndoHistoryBefore('insert',s,cpos,cpos+len(s),forceNewAction=True)
+            self.undoHistory[self.undoIndex]['allowsAppend']=True
+            self.write(s,type='Input')
+            self.UpdateUndoHistoryAfter()
+            
             self.autoCallTipShow(command, self.GetCurrentPos() == self.GetTextLength())
         else:
             # Allow the normal event handling to take place.
+            # Use undo wrapper
+            cpos=self.GetCurrentPos()
+            s=chr(key)
+            self.UpdateUndoHistoryBefore('insert',s,cpos,cpos+len(s))
             event.Skip()
-
-
+            self.UpdateUndoHistoryAfter()
+    
+    def AutoCompActiveCallback(self):
+        numChars=self.GetTextLength()-self.TotalLengthForAutoCompActiveCallback
+        if numChars==0:
+            self.undoIndex-=1
+            del(self.undoHistory[-1])
+        else:
+            uH=self.undoHistory
+            uI=self.undoIndex
+            cpos=uH[uI]['posStart']
+            s=''.join([chr(self.GetCharAt(cpos+i)) for i in range(numChars)])
+            s.replace(os.linesep,'\n')
+            self.undoHistory[self.undoIndex]['charList'] = s
+            self.undoHistory[self.undoIndex]['posEnd'] = cpos + numChars
+            self.undoHistory[self.undoIndex]['numLines'] = len(s.split('\n'))
+            self.UpdateUndoHistoryAfter()
+    
     def OnKeyDown(self, event):
         """Key down event handler."""
 
         key = event.GetKeyCode()
         # If the auto-complete window is up let it do its thing.
         if self.AutoCompActive():
-            event.Skip()
+            if key in [wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER]:
+                cpos=self.GetCurrentPos()
+                self.UpdateUndoHistoryBefore('insert','dummy',cpos,cpos+5,forceNewAction=True)
+                self.undoHistory[self.undoIndex]['allowsAppend'] = True
+                self.TotalLengthForAutoCompActiveCallback=self.GetTextLength()
+                event.Skip()
+                wx.CallAfter(self.AutoCompActiveCallback)
+            else:
+                event.Skip()
             return
         
         #DNM
@@ -1312,25 +1405,31 @@ class Shell(editwindow.EditWindow):
             self.OnHistorySearch()
             
         # Don't backspace over the latest non-continuation prompt.
+        #ADD UNDO
         elif key == wx.WXK_BACK:
             if self.SliceSelection:
                 self.SliceSelectionDelete()
             elif selecting and self.CanEdit():
                 self.ReplaceSelection('')
                 #event.Skip()
-            else:
-                if self.CanEdit():
-                    doDelete=True
-                    cur_line=self.GetCurrentLine()
-                    if not cur_line==0 and \
-                       self.GetCurrentPos()==self.PositionFromLine(cur_line):
-                        if self.MarkerGet(cur_line-1) & OUTPUT_MASK:
-                            doDelete=False
-                    
-                    if doDelete and self.BackspaceWMarkers():
+            elif self.CanEdit():
+                doDelete=True
+                cur_line=self.GetCurrentLine()
+                if not cur_line==0 and \
+                   self.GetCurrentPos()==self.PositionFromLine(cur_line):
+                    if self.MarkerGet(cur_line-1) & OUTPUT_MASK:
+                        doDelete=False
+                
+                if doDelete:
+                    cpos=self.GetCurrentPos()
+                    s=chr(self.GetCharAt(cpos-1))
+                    self.UpdateUndoHistoryBefore('delete',s,cpos-1,cpos)
+                    if self.BackspaceWMarkers():
                         event.Skip()
-                    wx.CallAfter(self.RestoreFirstMarker)
+                
+                wx.CallAfter(self.RestoreFirstMarker)
         
+        #ADD UNDO
         elif key == wx.WXK_DELETE:
             if self.SliceSelection:
                 self.SliceSelectionDelete()
@@ -1345,13 +1444,24 @@ class Shell(editwindow.EditWindow):
                     if self.MarkerGet(cur_line+1) & OUTPUT_MASK:
                         doDelete=False
                 
-                if doDelete and self.ForwardDeleteWMarkers():
-                    event.Skip()
+                if doDelete:
+                    cpos=self.GetCurrentPos()
+                    s=chr(self.GetCharAt(cpos))
+                    self.UpdateUndoHistoryBefore('delete',s,cpos,cpos+1)
+                    if self.ForwardDeleteWMarkers():
+                        event.Skip()
+                
                 wx.CallAfter(self.RestoreFirstMarker)
         
         # Only allow these keys after the latest prompt.
         elif key == wx.WXK_TAB and self.CanEdit():
-                event.Skip()
+            # use the same mechanism as with autocmplete...
+            cpos=self.GetCurrentPos()
+            self.UpdateUndoHistoryBefore('insert','dummy',cpos,cpos+5,forceNewAction=True)
+            self.undoHistory[self.undoIndex]['allowsAppend'] = True
+            self.TotalLengthForAutoCompActiveCallback=self.GetTextLength()
+            event.Skip()
+            wx.CallAfter(self.AutoCompActiveCallback)
         
         # Don't toggle between insert mode and overwrite mode.
         elif key == wx.WXK_INSERT:
@@ -1370,14 +1480,33 @@ class Shell(editwindow.EditWindow):
             #event.Skip()
             pass
         
+        #ADD UNDO
         elif controlDown and key in (ord('D'), ord('d')):
             #Disallow line duplication in favor of divide slices
             if self.MarkerGet(self.GetCurrentLine()) & INPUT_MASK:
+                cpos=self.GetCurrentPos()
+                start,end = map(self.PositionFromLine,self.GetGroupingSlice(self.LineFromPosition(cpos)))
+                self.UpdateUndoHistoryBefore('marker','',start,end,forceNewAction=True)
                 self.SplitSlice()
+                # Turn off selecting
+                self.SetSelection(cpos,cpos)
+                self.ReplaceSelection('')
+                self.UpdateUndoHistoryAfter()
         
+        #ADD UNDO
         elif controlDown and key in (ord('M'), ord('m')):
-            # TODO : Change this to Merge
-            self.MergeAdjacentSlices()
+            if self.SliceSelection:
+                cpos=self.GetCurrentPos()
+                ioSel=self.GetIOSelection()
+            if self.SliceSelection:
+                start,end = map(self.PositionFromLine,ioSel)
+                self.UpdateUndoHistoryBefore('marker','',start,end,forceNewAction=True)
+                self.MergeAdjacentSlices()
+                # Turn off selecting
+                self.SetSelection(cpos,cpos)
+                self.ReplaceSelection('')
+                self.UpdateUndoHistoryAfter()
+            
         
         # Change arrow keys to allow margin behaviors...
         elif self.SliceSelection and key in [wx.WXK_UP,wx.WXK_DOWN,wx.WXK_RIGHT,wx.WXK_LEFT]:
@@ -1431,6 +1560,9 @@ class Shell(editwindow.EditWindow):
             pass
 
         else:
+            if self.GetSelectionEnd()>self.GetSelectionStart(): # Check to see if we're selecting
+                if not controlDown and not altDown and key<256: # Check to see if a normal input took place
+                    self.ReplaceSelection('') # This seems to work...
             event.Skip()
         
         if self.SliceSelection:
@@ -1583,7 +1715,14 @@ class Shell(editwindow.EditWindow):
         startGrouping,endGrouping=self.GetGroupingSlice()
         startSel,endSel=self.LineFromPosition(self.GetSelectionStart()),self.LineFromPosition(self.GetSelectionEnd())
         
+        #ADD UNDO -- This may not be a good place for this...
+        cpos=self.GetSelectionStart()
+        s=self.GetSelectedText()
+        if s!='':
+            self.UpdateUndoHistoryBefore('delete',s,cpos,cpos+len(s),forceNewAction=True)
         editwindow.EditWindow.ReplaceSelection(self,'',*args,**kwds)
+        if s!='':
+            self.UpdateUndoHistoryAfter()
         
         if endSel-startSel>0 and not sliceDeletion:
             if endSel==endIO and startIO!=self.GetCurrentLine():
@@ -1594,9 +1733,16 @@ class Shell(editwindow.EditWindow):
                 self.clearGroupingMarkers()
                 self.MarkerAdd(self.GetCurrentLine(),GROUPING_END)
         
-        self.write(text)
+        cpos=self.GetSelectionStart()
+        s=text
+        if s!='':
+            self.UpdateUndoHistoryBefore('insert',s,cpos,cpos+len(s),forceNewAction=True)
+            self.write(text)
+            self.UpdateUndoHistoryAfter()
+        
         self.ensureSingleGroupingMarker()
         self.ensureSingleIOMarker()
+        
     
     def clearCommand(self):
         """Delete the current, unexecuted command."""
@@ -1683,7 +1829,14 @@ class Shell(editwindow.EditWindow):
         """Insert a new line break."""
         if not self.CanEdit():
             return
-        self.write(os.linesep,type='Input')
+        
+        # write with undo wrapper...
+        cpos=self.GetCurrentPos()
+        s=os.linesep
+        self.UpdateUndoHistoryBefore('insert',s,cpos,cpos+1)
+        self.write(s,type='Input')
+        self.UpdateUndoHistoryAfter()
+        
         self.more = True
         self.prompt()
 
@@ -1767,6 +1920,8 @@ class Shell(editwindow.EditWindow):
             new_pos=self.GetLineEndPosition(cur_line+1)
             self.SetSelection(new_pos,new_pos)
             self.SetCurrentPos(new_pos)
+        
+        self.EmptyUndoBuffer()
 
     def getMultilineCommand(self, rstrip=True):
         """Extract a multi-line command from the editor.
@@ -1968,6 +2123,9 @@ class Shell(editwindow.EditWindow):
             self.MarkerAdd(0,OUTPUT_START_FOLDED)
         else:
             self.MarkerAdd(0,INPUT_START)
+        
+        if self.doHistUpdate:
+            self.UpdateUndoHistoryAfter()
     
     def IsAllowedPair(self,m1,m2):
         i_s = 1<<INPUT_START | 1<<INPUT_START_FOLDED
@@ -2081,8 +2239,8 @@ class Shell(editwindow.EditWindow):
             end=INPUT_END
             opposite_start=OUTPUT_START
             opposite_start_folded=OUTPUT_START_FOLDED
-            opposite_middle=OUTPUT_MIDDLE# To test for bad writes...
-            opposite_end=OUTPUT_END# To test for bad writes...
+            opposite_middle=OUTPUT_MIDDLE # To test for bad writes...
+            opposite_end=OUTPUT_END # To test for bad writes...
         elif type in ['Output','Error']:
             #self.MarkerAdd(start_line_num,GROUPING_START_FOLDED)
             start=OUTPUT_START
@@ -2091,8 +2249,8 @@ class Shell(editwindow.EditWindow):
             end=OUTPUT_END
             opposite_start=INPUT_START
             opposite_start_folded=INPUT_START_FOLDED
-            opposite_middle=INPUT_MIDDLE# To test for bad writes...
-            opposite_end=INPUT_END# To test for bad writes...
+            opposite_middle=INPUT_MIDDLE # To test for bad writes...
+            opposite_end=INPUT_END # To test for bad writes...
         
         if num_new_lines>0: #Do nothing if typing within a line...
             # Update the Grouping Markers
@@ -2259,6 +2417,7 @@ class Shell(editwindow.EditWindow):
         if not self.more:
             # Not needed anymore! # self.promptPosEnd = self.GetCurrentPos()
             # Keep the undo feature from undoing previous responses.
+            #ADD UNDO
             self.EmptyUndoBuffer()
         #DNM
         # Autoindent magic
@@ -2275,7 +2434,13 @@ class Shell(editwindow.EditWindow):
                 if strip[-1]==':':
                     indent+=' '*4
             
-            self.write(indent,type='Input')
+            # write with undo wrapper...
+            cpos=self.GetCurrentPos()
+            s=indent
+            self.UpdateUndoHistoryBefore('insert',s,cpos,cpos+len(s))
+            self.write(s,type='Input')
+            self.UpdateUndoHistoryAfter()
+            
             
         self.EnsureCaretVisible()
         self.ScrollToColumn(0)
@@ -2386,7 +2551,13 @@ class Shell(editwindow.EditWindow):
             return
         startpos = self.GetCurrentPos()
         if argspec and insertcalltip and self.callTipInsert:
-            self.write(argspec + ')')
+            # write with undo history...
+            cpos=self.GetCurrentPos()
+            s=argspec + ')'
+            self.UpdateUndoHistoryBefore('insert',s,cpos,cpos+len(s))
+            self.write(s,type='Input')
+            self.UpdateUndoHistoryAfter()
+            
             endpos = self.GetCurrentPos()
             self.SetSelection(startpos, endpos)
         if tip:
@@ -2473,7 +2644,165 @@ class Shell(editwindow.EditWindow):
             sys.stderr = PseudoFileErr(self.writeErr)
         else:
             sys.stderr = self.stderr
-
+    
+    ## NEW STRATEGY!!!
+    # Ok, if I just take a spashot of the WHOLE grouping slice (or slices) there is no way to mess that up...
+    def UpdateUndoHistoryBefore(self,actionType,s,posStart,posEnd,forceNewAction=False): # s is either what got added or deleted
+        uH=self.undoHistory
+        uI=self.undoIndex
+        
+        s=s.replace(os.linesep,'\n')
+        startLine=self.LineFromPosition(posStart)
+        
+        if actionType=='marker':
+            numLines = self.LineFromPosition(posEnd) - startLine
+        else:
+            numLines=s.count('\n')
+        
+        makeNewAction=forceNewAction
+        
+        if forceNewAction:
+            makeNewAction=True
+        elif self.undoIndex==-1:
+            makeNewAction=True
+        elif not uH[uI]['allowsAppend']:
+            makeNewAction=True
+        elif actionType!=uH[uI]['actionType']:
+            makeNewAction=True
+        elif actionType=='insert':
+            if posStart!=uH[uI]['posEnd']:
+                makeNewAction=True
+            else: # This is a continuation of the previous insert
+                uH[uI]['charList'] = uH[uI]['charList']+s
+                uH[uI]['posEnd']   = posEnd # posStart cannot move
+                uH[uI]['numLines'] = uH[uI]['numLines']+numLines
+        elif actionType=='delete':
+            if posStart==uH[uI]['posStart']: # This is a forward continuation of the previous delete
+                uH[uI]['charList'] = uH[uI]['charList']+s
+                uH[uI]['posEnd'] = posEnd
+                uH[uI]['numLines'] = uH[uI]['numLines']+numLines
+            elif posEnd==uH[uI]['posStart']: # This is a backward continuation of the previous delete
+                uH[uI]['charList'] = s+uH[uI]['charList']
+                uH[uI]['posStart'] = posStart
+                uH[uI]['startLine'] = startLine
+                uH[uI]['numLines'] = uH[uI]['numLines']+numLines
+            else:
+                makeNewAction=True
+            
+        elif actionType=='marker':
+            makeNewAction=True
+        else:
+            print 'Unsupported Action Type!!'
+        
+        if makeNewAction:
+            del(self.undoHistory[uI+1:]) # remove actions after undoIndex
+            
+            uH.append({
+              'actionType' : actionType,          # Action type ('insert','delete','marker')
+              'allowsAppend': not forceNewAction, # Can this action be joined with others?
+              'charList' : s,                     # Character list
+              'posStart' : posStart,              # Position of the cursor at the start of the action
+              'posEnd' : posEnd,                  # Position of the cursor at the end of the action
+              'startLine' : startLine,            # Start line number,
+              'numLines' : numLines,              # Number of newlines involved
+              'mBStart' : None,                   # Starting line for markers BEFORE action
+              'mAStart' : None,                   # Starting line for markers AFTER action
+              'markersBefore' : None,             # [markers BEFORE action]
+              'markersAfter' : None               # [markers AFTER action]
+             })
+            
+            self.undoIndex+=1
+            
+            # Only update the before when starting a new action
+            start = startLine
+            if actionType=='insert':
+                end = start
+            else:
+                end = start + numLines
+            
+            # Update Marker Info
+            newStart=self.GetGroupingSlice(start)[0]
+            newEnd=self.GetGroupingSlice(end)[1]
+            self.undoHistory[self.undoIndex]['markersBefore'] = [self.MarkerGet(i) for i in range(newStart,newEnd+1)]
+            self.undoHistory[self.undoIndex]['mBStart']=newStart
+        
+        self.doHistUpdate=True
+    
+    def UpdateUndoHistoryAfter(self): # s is either what got added or deleted
+        start = self.undoHistory[self.undoIndex]['startLine']
+        if self.undoHistory[self.undoIndex]['actionType']=='delete':
+            end = start
+        else:
+            end = start + self.undoHistory[self.undoIndex]['numLines']
+        
+        newStart=self.GetGroupingSlice(start)[0]
+        newEnd=self.GetGroupingSlice(end)[1]
+        self.undoHistory[self.undoIndex]['markersAfter'] = [self.MarkerGet(i) for i in range(newStart,newEnd+1)]
+        self.undoHistory[self.undoIndex]['mAStart']=newStart
+        
+        self.doHistUpdate=False
+    
+    def Undo(self):
+        #ADD UNDO
+        #Skip undo if there are no actions...
+        if self.undoIndex==-1:
+            return
+        
+        uHI=self.undoHistory[self.undoIndex]
+        
+        if uHI['actionType'] in 'insert': # This will perform a delete (opposite of action)
+            editwindow.EditWindow.Undo(self)
+        elif uHI['actionType']=='delete': # This will perform an insert (opposite of action)
+            editwindow.EditWindow.Undo(self)
+        elif uHI['actionType']=='marker': # No text changed, don't pass to STC
+            pass
+        else:
+            print 'Unsupported actionType in undoHistory!!'
+            return
+        
+        #Fix markers:
+        #TESTING
+        #print 'Undo'
+        #print uHI
+        numLines=len(uHI['markersBefore'])
+        for i in range(numLines):
+            self.MarkerSet( uHI['mBStart']+i , uHI['markersBefore'][i] )
+        
+        self.undoIndex-=1
+    
+    def Redo(self):
+        #ADD UNDO
+        # First check to see if there are any redo operations available
+        # Note that for redo, undoIndex=-1 is a valid input
+        if self.undoIndex >= len(self.undoHistory)-1:
+            return
+        self.undoIndex+=1
+        uHI=self.undoHistory[self.undoIndex]
+        
+        if uHI['actionType'] in 'insert': # This will re-perform an insert
+            editwindow.EditWindow.Redo(self)
+        elif uHI['actionType']=='delete': # This will re-perform a delete
+            editwindow.EditWindow.Redo(self)
+        elif uHI['actionType']=='marker': # No text changed, don't pass to STC
+            pass
+        else:
+            print 'Unsupported actionType in undoHistory!!'
+            return
+        
+        #Fix markers:
+        #TESTING
+        #print 'Redo'
+        #print uHI
+        numLines=len(uHI['markersAfter'])
+        for i in range(numLines):
+            self.MarkerSet( uHI['mAStart']+i , uHI['markersAfter'][i] )
+    
+    def EmptyUndoBuffer(self):
+        editwindow.EditWindow.EmptyUndoBuffer(self)
+        self.undoIndex=-1
+        self.undoHistory=[]
+        self.doHistUpdate=False
+    
     def CanCut(self):
         return self.CanEdit() and (self.GetSelectionStart() != self.GetSelectionEnd())
         
@@ -2522,6 +2851,8 @@ class Shell(editwindow.EditWindow):
 
     def Cut(self):
         """Remove selection and place it on the clipboard."""
+        
+        #ADD UNDO
         if self.CanCut() and self.CanCopy():
             if self.AutoCompActive():
                 self.AutoCompCancel()
@@ -2569,6 +2900,8 @@ class Shell(editwindow.EditWindow):
 
     def Paste(self):
         """Replace selection with clipboard contents."""
+        
+        #ADD UNDO
         if self.CanPaste() and wx.TheClipboard.Open():
             ps2 = str(sys.ps2)
             if wx.TheClipboard.IsSupported(wx.DataFormat(wx.DF_TEXT)):
@@ -2585,13 +2918,21 @@ class Shell(editwindow.EditWindow):
                     #DNM--Don't use '... '
                     command = command.replace('\n', os.linesep)# + ps2)
                     #print command
-                    self.write(command)
+                    
+                    cpos=self.GetCurrentPos()
+                    s=command
+                    self.UpdateUndoHistoryBefore('insert',s,cpos,cpos+len(s),forceNewAction=True)
+                    self.write(s,type='Input')
+                    self.UpdateUndoHistoryAfter()
+                    
                     self.ReplaceSelection('') # Make paste -> type -> undo consistent with other STC apps
             wx.TheClipboard.Close()
 
 
     def PasteAndRun(self):
         """Replace selection with clipboard contents, run commands."""
+        
+        #ADD UNDO
         text = ''
         if wx.TheClipboard.Open():
             if wx.TheClipboard.IsSupported(wx.DataFormat(wx.DF_TEXT)):
@@ -2605,6 +2946,8 @@ class Shell(editwindow.EditWindow):
 
     def Execute(self, text):
         """Replace selection with text and run commands."""
+        
+        #ADD UNDO
         
         start,end=self.GetIOSlice()
         startpos=self.PositionFromLine(start)

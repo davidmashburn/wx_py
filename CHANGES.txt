@@ -1,6 +1,16 @@
-0.9.6.8 (10/1/2009)
+0.9.6.9 (7/9/2009)
+-------------------
+Fixed Undo marker issues and a bug in selection overwrite.
+
+0.9.6.8 (7/1/2009)
 -------------------
 Merged changes with SVN trunk.
+
+0.9.6.7 (4/27/2009)
+-------------------
+Made this version work exclusively with wx2.8 (which was a fact anyway...)
+    Made everything work with wxversion
+Took a snapshot of the working 26 and 28 versions of PyCrust from the Jaunty repos...
 
 0.9.6.4 thru 0.9.6.6  (10/22/2008-4/27/2009)
 -------------------
