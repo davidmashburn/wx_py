@@ -6,12 +6,6 @@ Fixed Undo marker issues and a bug in selection overwrite.
 -------------------
 Merged changes with SVN trunk.
 
-0.9.6.7 (4/27/2009)
--------------------
-Made this version work exclusively with wx2.8 (which was a fact anyway...)
-    Made everything work with wxversion
-Took a snapshot of the working 26 and 28 versions of PyCrust from the Jaunty repos...
-
 0.9.6.4 thru 0.9.6.6  (10/22/2008-4/27/2009)
 -------------------
 Added magic.py to handle some very simple "magic" commands:

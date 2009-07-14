@@ -5,13 +5,15 @@ based on wxPython's wxStyledTextCtrl.
 Sponsored by Orbtech - Your source for Python programming expertise.
 Slices is a version of shell modified by David Mashburn."""
 
+# TODO :    FIXED! -- Make delete slice a single operation instead of a number of them...
+# TODO :    FIXED! -- Make undo work correctly for this operation...
 # TODO :    FIXED! -- 99% of undo issue!!  Hooray!!
 # TODO :    FIXED! -- Obscure bug: when selecting, if you begin typing, markers are
 # TODO :               not preserved and undo does not catch all events
 # TODO :    FIXED! -- Tabs is not handled properly by undo system
 # TODO :    FIXED!--VERY obscure bug: when you push return, fold, unfold, hit delete, creates 2 slices!!!
 # TODO :    Make Ctrl-Home/End functionality equivalent
-# TODO :    Fix Undo -- messes up markers...
+# TODO :    FIXED! -- Undo -- messes up markers...
 # TODO :        Implement undo logic from scintilla, work on intergrating SC 1.77 to get SC_ACTIONSTART flag in STC_MODIFIED event
 # TODO :    Command History:
 # TODO :        Make it so that on a history replace, the command that got wiped out is stored as the last entry in the history buffer...
@@ -28,8 +30,8 @@ Slices is a version of shell modified by David Mashburn."""
 # TODO :        Add current directory information...
 # TODO :    Slices:
 # TODO :        FIXED! -- Enable arrows to move in slice
-# TODO :        Really should only be able to select one kind of marker at a time
-# TODO :        Capture mouse clicks and key presses to reset sliceselecting...or smn else
+# TODO :        Nah! -- Really should only be able to select one kind of marker at a time
+# TODO :        FIXED! -- Capture mouse clicks and key presses to reset sliceselecting...or smn else
 # TODO :        Make cut/copy/paste work with cells
 # TODO :    I/O - Freezing - Threading:
 # TODO :        OH, WOW!  Use delayedresult! -- from demo: import wx.lib.delayedresult as delayedresult
@@ -86,6 +88,8 @@ OUTPUT_START = 10
 OUTPUT_START_FOLDED = 11
 OUTPUT_MIDDLE = 12
 OUTPUT_END = 13
+
+OUTPUT_BG = 14
 # Could add C integration right into the markers...
 # Non-editable file marker for auto-loaded files...
 # Weave VariableInput = 15
@@ -434,15 +438,24 @@ class Shell(editwindow.EditWindow):
             self.MarkerDefine(GROUPING_MIDDLE,       stc.STC_MARK_VLINE,    "white", grouping_color)
             self.MarkerDefine(GROUPING_END,          stc.STC_MARK_LCORNER,  "white", grouping_color)
             
-            self.MarkerDefine(INPUT_START,           stc.STC_MARK_BOXMINUS, "white", input_color)
-            self.MarkerDefine(INPUT_START_FOLDED,    stc.STC_MARK_BOXPLUS,  "white", input_color)
-            self.MarkerDefine(INPUT_MIDDLE,          stc.STC_MARK_VLINE,    "white", input_color)
-            self.MarkerDefine(INPUT_END,             stc.STC_MARK_LCORNER,  "white", input_color)
+            mode='SlicesMode'
+            if mode=='ShellMode':
+                self.MarkerDefine(INPUT_START,           stc.STC_MARK_ARROWS,    input_color, "white")
+                self.MarkerDefine(INPUT_START_FOLDED,    stc.STC_MARK_BOXPLUS,   "white", input_color)
+                self.MarkerDefine(INPUT_MIDDLE,          stc.STC_MARK_DOTDOTDOT, input_color, "white")
+                self.MarkerDefine(INPUT_END,             stc.STC_MARK_DOTDOTDOT, input_color, "white")
+            elif mode=='SlicesMode':
+                self.MarkerDefine(INPUT_START,           stc.STC_MARK_BOXMINUS, "white", input_color)
+                self.MarkerDefine(INPUT_START_FOLDED,    stc.STC_MARK_BOXPLUS,  "white", input_color)
+                self.MarkerDefine(INPUT_MIDDLE,          stc.STC_MARK_VLINE,    "white", input_color)
+                self.MarkerDefine(INPUT_END,             stc.STC_MARK_LCORNER,  "white", input_color)
             
             self.MarkerDefine(OUTPUT_START,          stc.STC_MARK_BOXMINUS, "white", output_color)
             self.MarkerDefine(OUTPUT_START_FOLDED,   stc.STC_MARK_BOXPLUS,  "white", output_color)
             self.MarkerDefine(OUTPUT_MIDDLE,         stc.STC_MARK_VLINE,    "white", output_color)
             self.MarkerDefine(OUTPUT_END,            stc.STC_MARK_LCORNER,  "white", output_color)
+            
+            self.MarkerDefine(OUTPUT_BG,             stc.STC_MARK_BACKGROUND, "white", wx.Color(242,242,255))
             
             # Editing on an output line is disabled unless manually converted to output
             
@@ -528,15 +541,18 @@ class Shell(editwindow.EditWindow):
             if i==0:
                 self.MarkerAdd(i,GROUPING_START)
                 self.MarkerAdd(i,OUTPUT_START)
+                self.MarkerAdd(i,OUTPUT_BG)
             elif i==self.GetLineCount()-2:
                 self.MarkerAdd(i,GROUPING_END)
                 self.MarkerAdd(i,OUTPUT_END)
+                self.MarkerAdd(i,OUTPUT_BG)
             elif i==self.GetLineCount()-1:
                 self.MarkerAdd(i,GROUPING_START)
                 self.MarkerAdd(i,INPUT_START)
             else:
                 self.MarkerAdd(i,GROUPING_MIDDLE)
                 self.MarkerAdd(i,OUTPUT_MIDDLE)
+                self.MarkerAdd(i,OUTPUT_BG)
         
         self.SliceSelection=False
         
@@ -732,6 +748,7 @@ class Shell(editwindow.EditWindow):
             self.MarkerAdd(start,INPUT_START_FOLDED)
         elif marker & ( 1<<OUTPUT_START | 1<<OUTPUT_START_FOLDED ):
             self.MarkerAdd(start,OUTPUT_START_FOLDED)
+            self.MarkerAdd(start,OUTPUT_BG)
         else:
             print 'Bad Markers!!!'
     def FoldIOSlice(self,line_num=None):
@@ -749,6 +766,7 @@ class Shell(editwindow.EditWindow):
             self.MarkerAdd(start,INPUT_START_FOLDED)
         elif marker & ( 1<<OUTPUT_START | 1<<OUTPUT_START_FOLDED ):
             self.MarkerAdd(start,OUTPUT_START_FOLDED)
+            self.MarkerAdd(start,OUTPUT_BG)
         else:
             print 'Bad Markers!!!'
     def UnFoldGroupingSlice(self,line_num=None):
@@ -767,6 +785,7 @@ class Shell(editwindow.EditWindow):
             elif marker & (1<<OUTPUT_START | 1<<OUTPUT_START_FOLDED):
                 self.clearIOMarkers(i)
                 self.MarkerAdd(i,OUTPUT_START)
+                self.MarkerAdd(i,OUTPUT_BG)
         
     def UnFoldIOSlice(self,line_num=None):
         if line_num==None:
@@ -783,6 +802,7 @@ class Shell(editwindow.EditWindow):
             self.MarkerAdd(start,INPUT_START)
         elif marker & 1<<OUTPUT_START_FOLDED:
             self.MarkerAdd(start,OUTPUT_START)
+            self.MarkerAdd(start,OUTPUT_BG)
     
     # TODO : BROKEN!!!
     def DeleteOutputSlicesAfter(self,line_num=None):
@@ -887,18 +907,21 @@ class Shell(editwindow.EditWindow):
         elif start_num==line_num:
             self.clearIOMarkers(line_num+1)
             self.MarkerAdd(line_num+1,start)
+            if type=='Output': self.MarkerAdd(line_num+1,OUTPUT_BG)
             if splitGrouping:
                 self.clearGroupingMarkers(line_num+1)
                 self.MarkerAdd(line_num+1,GROUPING_START)
         else:
             self.clearIOMarkers(line_num)
             self.MarkerAdd(line_num,start)
+            if type=='Output': self.MarkerAdd(line_num,OUTPUT_BG)
             if splitGrouping:
                 self.clearGroupingMarkers(line_num)
                 self.MarkerAdd(line_num,GROUPING_START)
             if line_num-1>start_num:
                 self.clearIOMarkers(line_num-1)
                 self.MarkerAdd(line_num-1,end)
+                if type=='Output': self.MarkerAdd(line_num-1,OUTPUT_BG)
                 if splitGrouping:
                     self.clearGroupingMarkers(line_num-1)
                     self.MarkerAdd(line_num-1,GROUPING_END)
@@ -1038,6 +1061,7 @@ class Shell(editwindow.EditWindow):
                             self.clearIOMarkers(i)
                             self.clearGroupingMarkers(i)
                             self.MarkerAdd(i,OUTPUT_MIDDLE)
+                            self.MarkerAdd(i,OUTPUT_BG)
                             self.MarkerAdd(i,GROUPING_MIDDLE)
                 started=True
             elif started==True:
@@ -1061,57 +1085,46 @@ class Shell(editwindow.EditWindow):
                     self.clearGroupingMarkers(start)
                     self.MarkerAdd(start,GROUPING_MIDDLE)
                 self.MarkerAdd(end,OUTPUT_END)
+                self.MarkerAdd(end,OUTPUT_BG)
                 self.MarkerAdd(end,GROUPING_END)
             
     
     def SliceSelectionDelete(self):
-        for i in range(self.GetLineCount()-1,-1,-1):
+        """Deletion of any selected and possibly discontinuous slices."""
+        if not self.SliceSelection:
+            return
+        
+        selectedSlices=[]
+        start,end=None,None
+        for i in range(self.GetLineCount()):
             if self.MarkerGet(i) & (1<<GROUPING_SELECTING | 1<<IO_SELECTING):
-                oldMarker=self.MarkerGet(i)
-                
-                self.clearIOMarkers(i)
-                self.clearGroupingMarkers(i)
-                self.SetSelection(self.PositionFromLine(i),self.GetLineEndPosition(i)+1)
-                self.ReplaceSelection('',sliceDeletion=True)
-                cur_line=self.GetCurrentLine()
-                # Right now, this assumes 1 in, 1 out maximum per group...
-                
-                # If marker is groupingstart or blank, and previous marker is middle, make it an end
-                # Likewise, if marker is a grouping_middle, and previous marker is a grouping end, make previous into a middle
-                # And if end up on 1st line, always make it a grouping start
-                
-                if cur_line==0 and not (self.MarkerGet(cur_line) & ( 1<<GROUPING_START | 1<<GROUPING_START_FOLDED )):
-                    self.clearGroupingMarkers(cur_line)
-                    self.MarkerAdd(cur_line,GROUPING_START)
-                elif (self.MarkerGet(cur_line-1) & 1<<GROUPING_END) and (self.MarkerGet(cur_line) & ( 1<<GROUPING_MIDDLE | 1<<GROUPING_END ) ):
-                    self.clearGroupingMarkers(cur_line)
-                    self.MarkerAdd(cur_line,GROUPING_START)
-                elif (self.MarkerGet(cur_line-1) & 1<<GROUPING_MIDDLE) and (self.MarkerGet(cur_line) & ( 1<<GROUPING_START | 1<<GROUPING_START_FOLDED )):
-                    self.clearGroupingMarkers(cur_line-1)
-                    self.MarkerAdd(cur_line-1,GROUPING_END)
-                
-                #elif oldMarker & ( 1<<OUTPUT_START | 1<<OUTPUT_START_FOLDED  ) and cur_line>0:
-                #    marker=self.MarkerGet(cur_line-1)
-                #    if (marker & 1<<GROUPING_MIDDLE) and (marker & 1<<INPUT_END):
-                #        self.clearGroupingMarkers(cur_line-1)
-                #        self.MarkerAdd(cur_line-1,GROUPING_END)
-                #self.clearIOMarkers()
-                #self.clearGroupingMarkers()
-        
-        # If no marker on current line, make a new input marker
-        # If marker on current line is input, close previous grouping marker
-        
-        cur_line=self.GetCurrentLine()
-        if cur_line==self.GetLineCount()-1:
-            self.clearIOMarkers(cur_line)
-            self.clearGroupingMarkers(cur_line)
-            self.MarkerAdd(cur_line,INPUT_START)
-            self.MarkerAdd(cur_line,GROUPING_START)
-        else:
-            pass#if self.
+                if start==None:
+                    start=i
+                end=i
+            elif start!=None:
+                selectedSlices.append([start,end])
+                start,end=None,None
+        if start!=None:
+            selectedSlices.append([start,end])
         
         self.MarginUnselectAll()
         self.SliceSelection=False
+        
+        for i in range(len(selectedSlices)-1,-1,-1):
+            self.SetSelection(self.PositionFromLine(selectedSlices[i][0]),self.GetLineEndPosition(selectedSlices[i][1])+1)
+            self.ReplaceSelection('',sliceDeletion=True)
+            cur_line=self.GetCurrentLine()
+            
+            if (self.MarkerGet(cur_line-1) & 1<<GROUPING_END) and (self.MarkerGet(cur_line) & ( 1<<GROUPING_MIDDLE | 1<<GROUPING_END ) ):
+                self.clearGroupingMarkers(cur_line)
+                self.MarkerAdd(cur_line,GROUPING_START)
+            elif (self.MarkerGet(cur_line-1) & 1<<GROUPING_MIDDLE) and (self.MarkerGet(cur_line) & ( 1<<GROUPING_START | 1<<GROUPING_START_FOLDED )):
+                self.clearGroupingMarkers(cur_line-1)
+                self.MarkerAdd(cur_line-1,GROUPING_END)
+            
+            if i>0:
+                self.UpdateUndoHistoryAfter()
+        return
     
     def OnChar(self, event):
         """Keypress event handler.
@@ -1409,6 +1422,8 @@ class Shell(editwindow.EditWindow):
         elif key == wx.WXK_BACK:
             if self.SliceSelection:
                 self.SliceSelectionDelete()
+                self.doHistUpdate=True
+                wx.CallAfter(self.RestoreFirstMarker)
             elif selecting and self.CanEdit():
                 self.ReplaceSelection('')
                 #event.Skip()
@@ -1433,6 +1448,8 @@ class Shell(editwindow.EditWindow):
         elif key == wx.WXK_DELETE:
             if self.SliceSelection:
                 self.SliceSelectionDelete()
+                self.doHistUpdate=True
+                wx.CallAfter(self.RestoreFirstMarker)
             elif selecting and self.CanEdit():
                 self.ReplaceSelection('')
                 #event.Skip()
@@ -1721,7 +1738,7 @@ class Shell(editwindow.EditWindow):
         if s!='':
             self.UpdateUndoHistoryBefore('delete',s,cpos,cpos+len(s),forceNewAction=True)
         editwindow.EditWindow.ReplaceSelection(self,'',*args,**kwds)
-        if s!='':
+        if s!='' and not sliceDeletion:
             self.UpdateUndoHistoryAfter()
         
         if endSel-startSel>0 and not sliceDeletion:
@@ -1914,6 +1931,9 @@ class Shell(editwindow.EditWindow):
         
         if self.GetCurrentLine()==self.GetLineCount()-1:
             self.write(os.linesep,type='Input')
+            cpos=self.GetCurrentLine()
+            if self.MarkerGet(cpos-1) & OUTPUT_MASK:
+                self.MarkerAdd(cpos-1,OUTPUT_BG)
             self.SplitSlice()
         else:
             cur_line=self.GetCurrentLine()
@@ -1988,7 +2008,6 @@ class Shell(editwindow.EditWindow):
         """Send command to the interpreter for execution."""
         if not silent:
             self.write(os.linesep,type='Output')
-        
         # TODO : What other magic might we insert here?
         # TODO : Is there a good reason not to include magic?
         if USE_MAGIC:
@@ -2010,10 +2029,14 @@ class Shell(editwindow.EditWindow):
             # I could do the following, but I don't really like it!
             #if useMultiCommand:
             #    self.SplitSlice()
+        if not silent:
+            self.MarkerAdd(self.GetIOSlice()[0],OUTPUT_BG)
+        
         self.waiting = False
         del busy
         if not self.more: # could loop-add to the history,too but I don't like it!
             self.addHistory(command.rstrip())
+        
         if not silent:
             self.prompt()
 
@@ -2046,6 +2069,7 @@ class Shell(editwindow.EditWindow):
         self.MarkerDelete(line_num,OUTPUT_START_FOLDED)
         self.MarkerDelete(line_num,OUTPUT_MIDDLE)
         self.MarkerDelete(line_num,OUTPUT_END)
+        self.MarkerDelete(line_num,OUTPUT_BG)
     def ensureSingleGroupingMarker(self,line_num=None):
         if line_num==None:
             line_num=self.GetCurrentLine()
@@ -2076,6 +2100,7 @@ class Shell(editwindow.EditWindow):
             self.MarkerDelete(line_num,OUTPUT_START_FOLDED)
             self.MarkerDelete(line_num,OUTPUT_MIDDLE)
             self.MarkerDelete(line_num,OUTPUT_END)
+            self.MarkerDelete(line_num,OUTPUT_BG)
             [start,start_folded,middle,end]=[INPUT_START,INPUT_START_FOLDED,INPUT_MIDDLE,INPUT_END]
         elif marker & OUTPUT_MASK:
             self.MarkerDelete(line_num,INPUT_START)
@@ -2091,11 +2116,14 @@ class Shell(editwindow.EditWindow):
             self.MarkerDelete(line_num,start_folded)
             self.MarkerDelete(line_num,middle)
             self.MarkerDelete(line_num,end)
+            if start==OUTPUT_START: self.MarkerDelete(line_num,OUTPUT_BG)
         elif marker & 1<<start_folded:
             self.MarkerDelete(line_num,middle)
             self.MarkerDelete(line_num,end)
+            if start==OUTPUT_START: self.MarkerDelete(line_num,OUTPUT_BG)
         elif marker & 1<<middle:
             self.MarkerDelete(line_num,end)
+            if start==OUTPUT_START: self.MarkerDelete(line_num,OUTPUT_BG)
         elif marker & 1<<end:
             pass
         
@@ -2119,8 +2147,10 @@ class Shell(editwindow.EditWindow):
             self.MarkerAdd(0,INPUT_START_FOLDED)
         elif first_marker & 1<<OUTPUT_START :
             self.MarkerAdd(0,OUTPUT_START)
+            self.MarkerAdd(0,OUTPUT_BG)
         elif first_marker & 1<<OUTPUT_START_FOLDED :
             self.MarkerAdd(0,OUTPUT_START_FOLDED)
+            self.MarkerAdd(0,OUTPUT_BG)
         else:
             self.MarkerAdd(0,INPUT_START)
         
@@ -2268,6 +2298,7 @@ class Shell(editwindow.EditWindow):
                 
                 self.clearIOMarkers(start_line_num)
                 self.MarkerAdd(start_line_num,start)
+                if type=='Output': self.MarkerAdd(start_line_num,OUTPUT_BG)
             else:
                 previous_marker=self.MarkerGet(previous_line_num)
                 if previous_marker & 1<<opposite_middle:
@@ -2276,6 +2307,7 @@ class Shell(editwindow.EditWindow):
             if next_line_num==None:
                 self.MarkerAdd(end_line_num,GROUPING_END)
                 self.MarkerAdd(end_line_num,end)
+                if type=='Output': self.MarkerAdd(end_line_num,OUTPUT_BG)
                 fixEndMarkers=False
                 # May be overwritten below if start_line_num==end_line_num...
             else:
@@ -2307,6 +2339,7 @@ class Shell(editwindow.EditWindow):
                     if previous_marker & 1<<end :
                         self.MarkerDelete(previous_line_num,end)
                         self.MarkerAdd(previous_line_num,middle) # ONLY CHANGING CASE
+                        if type=='Output': self.MarkerAdd(previous_line_num,OUTPUT_BG)
                     elif previous_marker & 1<<opposite_middle :
                         if type=='Input': print 'Should have been a bad marker!' # BAD CASE
                     
@@ -2324,12 +2357,14 @@ class Shell(editwindow.EditWindow):
                                 fixIOEnd=False
                         self.clearIOMarkers(start_line_num)
                         self.MarkerAdd(start_line_num,start)
+                        if type=='Output': self.MarkerAdd(start_line_num,OUTPUT_BG)
                     else:
                         if next_line_num!=None:
                             self.clearGroupingMarkers(start_line_num)
                             self.clearIOMarkers(start_line_num)
                             self.MarkerAdd(start_line_num,GROUPING_MIDDLE)
                             self.MarkerAdd(start_line_num,middle)
+                            if type=='Output': self.MarkerAdd(start_line_num,OUTPUT_BG)
                             # This may be overwritten by if start_line_num==end_line_num
                 
                 # Take care of all the middle lines...
@@ -2340,6 +2375,7 @@ class Shell(editwindow.EditWindow):
                     
                     self.clearIOMarkers(i)
                     self.MarkerAdd(i,middle)
+                    if type=='Output': self.MarkerAdd(i,OUTPUT_BG)
                 
                 if fixEndMarkers: #next_line_num!=None and not ( start_line_num==end_line_num and  ): # , just use what you computed from start...
                     # Now take care of the end_line...if we haven't already done so...
@@ -2362,12 +2398,16 @@ class Shell(editwindow.EditWindow):
                     if fixIOEnd: 
                         if next_marker & ( 1<<start | 1<<start_folded ) :
                             self.MarkerAdd(end_line_num,end)
+                            if type=='Output': self.MarkerAdd(end_line_num,OUTPUT_BG)
                         elif next_marker & ( 1<<middle | 1<<end ) :
                             self.MarkerAdd(end_line_num,middle)
+                            if type=='Output': self.MarkerAdd(end_line_num,OUTPUT_BG)
                         elif next_marker & ( 1<<opposite_start | 1<<opposite_start_folded ):
                             self.MarkerAdd(end_line_num,end)
+                            if type=='Output': self.MarkerAdd(end_line_num,OUTPUT_BG)
                         else:
                             self.MarkerAdd(end_line_num,start_folded)
+                            if type=='Output': self.MarkerAdd(end_line_num,OUTPUT_BG)
                             if type=='Input': print 'BAD MARKERS!'
             else:
                 if type=='Input': print 'BAD MARKERS!!!'
@@ -2735,8 +2775,8 @@ class Shell(editwindow.EditWindow):
         else:
             end = start + self.undoHistory[self.undoIndex]['numLines']
         
-        newStart=self.GetGroupingSlice(start)[0]
-        newEnd=self.GetGroupingSlice(end)[1]
+        newStart=min(self.GetGroupingSlice(start)[0]-1, 0)
+        newEnd=max(self.GetGroupingSlice(end)[1]+1, self.GetLineCount()-1)
         self.undoHistory[self.undoIndex]['markersAfter'] = [self.MarkerGet(i) for i in range(newStart,newEnd+1)]
         self.undoHistory[self.undoIndex]['mAStart']=newStart
         

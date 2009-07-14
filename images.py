@@ -7,21 +7,20 @@ __revision__ = "$Revision: 24541 $"[11:-2]
 import wx
 import cStringIO
 
-
-def getPyIcon(useSlices=False):
+def getPyIcon(shellName='PyCrust'):
     icon = wx.EmptyIcon()
-    icon.CopyFromBitmap(getPyBitmap(useSlices=useSlices))
+    icon.CopyFromBitmap(getPyBitmap(shellName=shellName))
     return icon
 
-def getPyBitmap(useSlices=False):
-    return wx.BitmapFromImage(getPyImage(useSlices=useSlices))
+def getPyBitmap(shellName='PyCrust'):
+    return wx.BitmapFromImage(getPyImage(shellName=shellName))
 
-def getPyImage(useSlices=False):
-    stream = cStringIO.StringIO(getPyData(useSlices=useSlices))
+def getPyImage(shellName='PyCrust'):
+    stream = cStringIO.StringIO(getPyData(shellName=shellName))
     return wx.ImageFromStream(stream)
 
-def getPyData(useSlices=False):
-    if not useSlices:
+def getPyData(shellName='PyCrust'):
+    if shellName=='PyCrust':
         return \
 '\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00 \x00\x00\x00 \x08\x06\x00\
 \x00\x00szz\xf4\x00\x00\x00\x04sBIT\x08\x08\x08\x08|\x08d\x88\x00\x00\x04\
@@ -71,7 +70,7 @@ N\xba\xb3\xab\x87\xfb\x8f\x97\xd8\xd9\xd5\x03\xc0\xfd\xc7K\xec\xd8\xd6\xdd\
 \x8f\xdb\xbel\x8e\xa1S\xc7\xda\xc6\xe6\xee\xccs\xe9\xdcYnV\x95\xd8\xf2?&q+\
 \x9c\x1b1\xf3\xbf\xcd3{\xfdJ\xdb\xf8\xde\xfd\x19.\\\xad\x08\x80\xbf\x01\xd1\
 \x86\xfa\x8b\xc7\xc0\xc8\xb7\x00\x00\x00\x00IEND\xaeB`\x82'
-    else:
+    elif shellName=='PySlices':
         return \
 '\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00 \x00\x00\x00 \x08\x06\x00\x00\
 \x00szz\xf4\x00\x00\x00\x01sRGB\x00\xae\xce\x1c\xe9\x00\x00\x00\x06bKGD\x00\xff\
