@@ -173,16 +173,16 @@ class ShellFrame(frame.Frame, frame.ShellFrameMixin):
     name = 'Shell Frame'
     revision = __revision__
 
-    def __init__(self, parent=None, id=-1, title='PyShell',
+    def __init__(self, parent=None, id=-1, title='PySlicesShell',
                  pos=wx.DefaultPosition, size=wx.DefaultSize,
                  style=wx.DEFAULT_FRAME_STYLE, locals=None,
                  InterpClass=None,
-                 config=None, dataDir=None, # added config
+                 config=None, dataDir=None,
                  *args, **kwds):
         """Create ShellFrame instance."""
         frame.Frame.__init__(self, parent, id, title, pos, size, style)
         frame.ShellFrameMixin.__init__(self, config, dataDir)
-        print '2', self.showPySlicesTutorial
+        
         if size == wx.DefaultSize:
             self.SetSize((750, 525))
 
@@ -248,8 +248,6 @@ class ShellFrame(frame.Frame, frame.ShellFrameMixin):
             frame.ShellFrameMixin.SaveSettings(self)
             if self.autoSaveSettings or force:
                 frame.Frame.SaveSettings(self, self.config)
-                #self.shell.showPySlicesTutorial=self.Frame.showPySlicesTutorial
-                #self.shell.execStartupScript=self.Frame.execStartupScript
                 self.shell.SaveSettings(self.config)
 
     def DoSaveSettings(self):
@@ -546,9 +544,7 @@ class Shell(editwindow.EditWindow):
         # Display the introductory banner information.
         self.showIntro(introText)
         
-        self.config=config # added config
-        self.LoadSettings(self.config) # added config
-        #self.showPySlicesTutorial=showPySlicesTutorial
+        self.LoadSettings(config) # added config
         
         if self.showPySlicesTutorial:
             self.write(tutorialText,'Output')
