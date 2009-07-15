@@ -177,12 +177,12 @@ class ShellFrame(frame.Frame, frame.ShellFrameMixin):
                  pos=wx.DefaultPosition, size=wx.DefaultSize,
                  style=wx.DEFAULT_FRAME_STYLE, locals=None,
                  InterpClass=None,
-                 config=None, dataDir=None,
+                 config=None, dataDir=None, # added config
                  *args, **kwds):
         """Create ShellFrame instance."""
         frame.Frame.__init__(self, parent, id, title, pos, size, style)
         frame.ShellFrameMixin.__init__(self, config, dataDir)
-
+        print '2', self.showPySlicesTutorial
         if size == wx.DefaultSize:
             self.SetSize((750, 525))
 
@@ -192,6 +192,7 @@ class ShellFrame(frame.Frame, frame.ShellFrameMixin):
                            locals=locals, InterpClass=InterpClass,
                            startupScript=self.startupScript,
                            execStartupScript=self.execStartupScript,
+                           showPySlicesTutorial=self.showPySlicesTutorial
                            *args, **kwds)
 
         # Override the shell so that status messages go to the status bar.
@@ -247,6 +248,8 @@ class ShellFrame(frame.Frame, frame.ShellFrameMixin):
             frame.ShellFrameMixin.SaveSettings(self)
             if self.autoSaveSettings or force:
                 frame.Frame.SaveSettings(self, self.config)
+                #self.shell.showPySlicesTutorial=self.Frame.showPySlicesTutorial
+                #self.shell.execStartupScript=self.Frame.execStartupScript
                 self.shell.SaveSettings(self.config)
 
     def DoSaveSettings(self):
@@ -373,7 +376,7 @@ class Shell(editwindow.EditWindow):
                  size=wx.DefaultSize, style=wx.CLIP_CHILDREN,
                  introText='', locals=None, InterpClass=None,
                  startupScript=None, execStartupScript=True,
-                 *args, **kwds):
+                 showPySlicesTutorial=True, config=None, *args, **kwds): # added config
         """Create Shell instance."""
         editwindow.EditWindow.__init__(self, parent, id, pos, size, style)
         self.wrap()
@@ -543,9 +546,11 @@ class Shell(editwindow.EditWindow):
         # Display the introductory banner information.
         self.showIntro(introText)
         
-        self.startupTutorial=True
+        self.config=config # added config
+        self.LoadSettings(self.config) # added config
+        #self.showPySlicesTutorial=showPySlicesTutorial
         
-        if self.startupTutorial:
+        if self.showPySlicesTutorial:
             self.write(tutorialText,'Output')
             outStart=[4,13]
             outEnd=[3,9]
@@ -2844,7 +2849,7 @@ class Shell(editwindow.EditWindow):
         
         uHI=self.undoHistory[self.undoIndex]
         
-        if uHI['actionType'] in 'insert': # This will perform a delete (opposite of action)
+        if uHI['actionType']=='insert': # This will perform a delete (opposite of action)
             editwindow.EditWindow.Undo(self)
         elif uHI['actionType']=='delete': # This will perform an insert (opposite of action)
             editwindow.EditWindow.Undo(self)
@@ -2873,7 +2878,7 @@ class Shell(editwindow.EditWindow):
         self.undoIndex+=1
         uHI=self.undoHistory[self.undoIndex]
         
-        if uHI['actionType'] in 'insert': # This will re-perform an insert
+        if uHI['actionType']=='insert': # This will re-perform an insert
             editwindow.EditWindow.Redo(self)
         elif uHI['actionType']=='delete': # This will re-perform a delete
             editwindow.EditWindow.Redo(self)
@@ -3081,6 +3086,7 @@ class Shell(editwindow.EditWindow):
 
         self.autoCallTip = config.ReadBool('Options/AutoCallTip', True)
         self.callTipInsert = config.ReadBool('Options/CallTipInsert', True)
+        self.showPySlicesTutorial = config.ReadBool('Options/ShowPySlicesTutorial', True)
         self.SetWrapMode(config.ReadBool('View/WrapMode', True))
 
         self.lineNumbers = config.ReadBool('View/ShowLineNumbers', True)
@@ -3098,6 +3104,7 @@ class Shell(editwindow.EditWindow):
         config.WriteBool('Options/AutoCompleteIncludeDouble', self.autoCompleteIncludeDouble)
         config.WriteBool('Options/AutoCallTip', self.autoCallTip)
         config.WriteBool('Options/CallTipInsert', self.callTipInsert)
+        #config.WriteBool('Options/ShowPySlicesTutorial', self.showPySlicesTutorial)
         config.WriteBool('View/WrapMode', self.GetWrapMode())
         config.WriteBool('View/ShowLineNumbers', self.lineNumbers)
         config.WriteInt('View/Zoom/Shell', self.GetZoom())

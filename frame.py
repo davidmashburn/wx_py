@@ -50,6 +50,7 @@ ID_SAVESETTINGS = wx.NewId()
 ID_DELSETTINGSFILE = wx.NewId()
 ID_EDITSTARTUPSCRIPT = wx.NewId()
 ID_EXECSTARTUPSCRIPT = wx.NewId()
+ID_SHOWPYSLICESTUTORIAL = wx.NewId()
 ID_STARTUP = wx.NewId()
 ID_SETTINGS = wx.NewId()
 ID_FIND = wx.ID_FIND
@@ -70,6 +71,7 @@ class Frame(wx.Frame):
         wx.Frame.__init__(self, parent, id, title, pos, size, style)
         self.CreateStatusBar()
         self.SetStatusText('Frame')
+        self.shellName=shellName
         import images
         self.SetIcon(images.getPyIcon(shellName=shellName))
         self.__createMenus()
@@ -200,6 +202,10 @@ class Frame(wx.Frame):
         self.startupMenu.Append(ID_EDITSTARTUPSCRIPT,
                                 '&Edit Startup Script...',
                                 'Edit Startup Script')
+        if self.shellName=='PySlices':
+            self.startupMenu.Append(ID_SHOWPYSLICESTUTORIAL,
+                                '&Show PySlices Tutorial',
+                                'Show PySlices Tutorial', wx.ITEM_CHECK)
         m.AppendMenu(ID_STARTUP, '&Startup', self.startupMenu, 'Startup Options')
 
         self.settingsMenu = wx.Menu()
@@ -265,6 +271,7 @@ class Frame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.OnDelSettingsFile, id=ID_DELSETTINGSFILE)
         self.Bind(wx.EVT_MENU, self.OnEditStartupScript, id=ID_EDITSTARTUPSCRIPT)
         self.Bind(wx.EVT_MENU, self.OnExecStartupScript, id=ID_EXECSTARTUPSCRIPT)
+        self.Bind(wx.EVT_MENU, self.OnShowPySlicesTutorial, id=ID_SHOWPYSLICESTUTORIAL)
         self.Bind(wx.EVT_MENU, self.OnFindText, id=ID_FIND)
         self.Bind(wx.EVT_MENU, self.OnFindNext, id=ID_FINDNEXT)
         self.Bind(wx.EVT_MENU, self.OnToggleTools, id=ID_SHOWTOOLS)
@@ -299,6 +306,7 @@ class Frame(wx.Frame):
         self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateMenu, id=ID_SAVESETTINGS)
         self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateMenu, id=ID_DELSETTINGSFILE)
         self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateMenu, id=ID_EXECSTARTUPSCRIPT)
+        self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateMenu, id=ID_SHOWPYSLICESTUTORIAL)
         self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateMenu, id=ID_SAVEHISTORY)
         self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateMenu, id=ID_SAVEHISTORYNOW)
         self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateMenu, id=ID_CLEARHISTORY)
@@ -480,7 +488,9 @@ class Frame(wx.Frame):
             
     def OnExecStartupScript(self, event):
         self.execStartupScript = event.IsChecked()
-
+    
+    def OnShowPySlicesTutorial(self,event):
+        self.showPySlicesTutorial = event.IsChecked()
 
     def OnFindText(self, event):
         if self.findDlg is not None:
@@ -587,6 +597,10 @@ class Frame(wx.Frame):
             elif id == ID_EXECSTARTUPSCRIPT:
                 event.Check(self.execStartupScript)
                 event.Enable(self.config is not None)
+            
+            elif id == ID_SHOWPYSLICESTUTORIAL:
+                event.Check(self.showPySlicesTutorial)
+                event.Enable(self.config is not None)
 
             elif id == ID_SAVEHISTORY:
                 event.Check(self.autoSaveHistory)
@@ -679,10 +693,12 @@ class ShellFrameMixin:
 
         # We need this one before we have a chance to load the settings...
         self.execStartupScript = True
+        self.showPySlicesTutorial = True
         if self.config:
             self.execStartupScript = self.config.ReadBool('Options/ExecStartupScript', True)
-            
-
+            self.showPySlicesTutorial = self.config.ReadBool('Options/ShowPySlicesTutorial', True)
+        print '1', self.showPySlicesTutorial
+    
     def OnHelp(self, event):
         """Display a Help window."""
         import  wx.lib.dialogs
@@ -710,9 +726,11 @@ class ShellFrameMixin:
         if self.config is not None:
             # always save this one
             self.config.WriteBool('Options/AutoSaveSettings', self.autoSaveSettings)
+            self.config.WriteBool('Options/ShowPySlicesTutorial', self.showPySlicesTutorial)
             if self.autoSaveSettings:
                 self.config.WriteBool('Options/AutoSaveHistory', self.autoSaveHistory)
                 self.config.WriteBool('Options/ExecStartupScript', self.execStartupScript)
+                self.config.WriteBool('Options/ShowPySlicesTutorial', self.showPySlicesTutorial)
             if self.autoSaveHistory:
                 self.SaveHistory()
 

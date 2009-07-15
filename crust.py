@@ -33,7 +33,7 @@ class Crust(wx.SplitterWindow):
                  rootIsNamespace=True, intro='', locals=None,
                  InterpClass=None,
                  startupScript=None, execStartupScript=True,
-                 shellName='PyCrust',
+                 shellName='PyCrust', config=None, # added config
                  *args, **kwds):
         """Create Crust instance."""
         wx.SplitterWindow.__init__(self, parent, id, pos, size, style, name)
@@ -54,6 +54,7 @@ class Crust(wx.SplitterWindow):
                                 locals=locals, InterpClass=InterpClass,
                                 startupScript=startupScript,
                                 execStartupScript=execStartupScript,
+                                config=config, # added config
                                 *args, **kwds)
         
         self.editor = self.shell
@@ -316,7 +317,7 @@ class CrustFrame(frame.Frame, frame.ShellFrameMixin):
                            InterpClass=InterpClass,
                            startupScript=self.startupScript,
                            execStartupScript=self.execStartupScript,
-                           shellName=shellName,
+                           shellName=shellName,config=config, # added config
                            *args, **kwds)
         self.shell = self.crust.shell
 
