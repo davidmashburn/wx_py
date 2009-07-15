@@ -11,7 +11,7 @@ import keyword
 # TODO : Still Refining this... seems to be ok for now... still finding gotchas, though!
 # TODO : Multi-line strings seem to be correctly broken into commands by PyCrust(PySlices)
 # TODO : Is there a better version of ls, cd, pwd, etc that could be used?
-def magic(command):
+def magicSingle(command):
     if command=='': # Pass if command is blank
         return command
     
@@ -42,3 +42,9 @@ def magic(command):
                 if wd1.replace('.','').replace('_','').isalnum():
                     command=wd1+'('+command[(first_space+1):]+')' # add parentheses where the first space was and at the end... hooray!
     return command
+
+def magic(command):
+    commandList=[]
+    for i in command.split('\n'):
+        commandList.append(magicSingle(i))
+    return '\n'.join(commandList)

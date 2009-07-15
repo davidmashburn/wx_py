@@ -6,4 +6,4 @@ __author__ = "Patrick K. O'Brien <pobrien@orbtech.com>"
 __cvsid__ = "$Id: version.py 36607 2005-12-30 23:02:03Z RD $"
 __revision__ = "$Revision: 36607 $"[11:-2]
 
-VERSION = '0.9.5'
+VERSION = '0.9.7'

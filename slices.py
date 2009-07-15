@@ -5,6 +5,35 @@ based on wxPython's wxStyledTextCtrl.
 Sponsored by Orbtech - Your source for Python programming expertise.
 Slices is a version of shell modified by David Mashburn."""
 
+__author__ = "Patrick K. O'Brien <pobrien@orbtech.com> / David N. Mashburn <david.n.mashburn@gmail.com>"
+__cvsid__ = "$Id: shell.py 60100 2009-04-12 02:56:29Z RD $"
+__revision__ = "$Revision: 60100 $"[11:-2]
+
+import wx
+from wx import stc
+
+import keyword
+import os
+import sys
+import time
+
+from buffer import Buffer
+import dispatcher
+import editwindow
+import frame
+from pseudo import PseudoFileIn
+from pseudo import PseudoFileOut
+from pseudo import PseudoFileErr
+from version import VERSION
+from magic import magic
+from path import ls,cd,pwd
+
+sys.ps3 = '<-- '  # Input prompt.
+USE_MAGIC=True
+
+NAVKEYS = (wx.WXK_END, wx.WXK_LEFT, wx.WXK_RIGHT,
+           wx.WXK_UP, wx.WXK_DOWN, wx.WXK_PRIOR, wx.WXK_NEXT)
+
 # TODO :    FIXED! -- Make delete slice a single operation instead of a number of them...
 # TODO :    FIXED! -- Make undo work correctly for this operation...
 # TODO :    FIXED! -- 99% of undo issue!!  Hooray!!
@@ -109,34 +138,34 @@ IO_ANY_START_MASK = ( 1<<INPUT_START | 1<<OUTPUT_START | 1<<INPUT_START_FOLDED |
 IO_MIDDLE_MASK = ( 1<<INPUT_MIDDLE | 1<<OUTPUT_MIDDLE )
 IO_END_MASK = ( 1<<INPUT_END | 1<<OUTPUT_END )
 
-__author__ = "Patrick K. O'Brien <pobrien@orbtech.com> / David N. Mashburn <david.n.mashburn@gmail.com>"
-__cvsid__ = "$Id: shell.py 60100 2009-04-12 02:56:29Z RD $"
-__revision__ = "$Revision: 60100 $"[11:-2]
-
-import wx
-from wx import stc
-
-import keyword
-import os
-import sys
-import time
-
-from buffer import Buffer
-import dispatcher
-import editwindow
-import frame
-from pseudo import PseudoFileIn
-from pseudo import PseudoFileOut
-from pseudo import PseudoFileErr
-from version import VERSION
-from magic import magic
-from path import ls,cd,pwd
-
-sys.ps3 = '<-- '  # Input prompt.
-USE_MAGIC=True
-
-NAVKEYS = (wx.WXK_END, wx.WXK_LEFT, wx.WXK_RIGHT,
-           wx.WXK_UP, wx.WXK_DOWN, wx.WXK_PRIOR, wx.WXK_NEXT)
+tutorialText = """
+PySlices, the newest member of the Py suite, is a modified
+version of PyCrust that supports multi-line commands in
+the form of "slices."  Slices are either for input (red
+margin = active, editable) or output (blue = frozen, not
+editable).  Commands in slices can be on more than one line,
+like with Mathematica or Sage.  For example, the command:
+a=1
+b=2
+print a+b
+will all run in sequence, much like a script.  Try running
+the above command with Enter, Ctrl-Return, or Shift-Return.
+Previous commands (old slices) can be re-edited and run
+again in place. Slices can also be:
+ * selceted (click on margin, Shift for multiple selection)
+ * folded (click margin twice)
+ * selected and deleted (hit delete while selected)
+ * divided (Ctrl-D)
+ * and merged (Ctrl-M while selecting adjacent, like-colored slices)
+Try deleting the slice above this one by clicking on the
+colored margin.
+If you want a more traditional shell feel, try enabling shell mode
+in "Options->Settings->Shell Mode" or using PyCrust.
+To disable this message on startup, go to
+"Options->Startup->Show PySlices tutorial"
+PySlices may not be the best thing since sliced bread, but
+I hope it makes using Python a little bit sweeter!
+"""
 
 class ShellFrame(frame.Frame, frame.ShellFrameMixin):
     """Frame containing the shell component."""
@@ -157,7 +186,7 @@ class ShellFrame(frame.Frame, frame.ShellFrameMixin):
         if size == wx.DefaultSize:
             self.SetSize((750, 525))
 
-        intro = 'PyShell %s - The Flakiest Python Shell' % VERSION
+        intro = 'PySlices %s - The Flakiest Python Shell... Cut Up!' % VERSION
         self.SetStatusText(intro.replace('\n', ', '))
         self.shell = Shell(parent=self, id=-1, introText=intro,
                            locals=locals, InterpClass=InterpClass,
@@ -514,16 +543,28 @@ class Shell(editwindow.EditWindow):
         # Display the introductory banner information.
         self.showIntro(introText)
         
+        self.startupTutorial=True
+        
+        if self.startupTutorial:
+            self.write(tutorialText,'Output')
+            outStart=[4,13]
+            outEnd=[3,9]
+            inStart=[10]
+            inMiddle=[11]
+            inEnd=[12]
+        else:
+            outStart=[]
+            outEnd=[]
+            inStart=[]
+            inMiddle=[]
+            inEnd=[]
+        
         # Assign some pseudo keywords to the interpreter's namespace.
         self.setBuiltinKeywords()
 
         # Add 'shell' to the interpreter's local namespace.
         self.setLocalShell()
-
-        ## NOTE:  See note at bottom of this file...
-        ## #seb: File drag and drop
-        ## self.SetDropTarget( FileDropTarget(self) )
-
+        
         # Do this last so the user has complete control over their
         # environment.  They can override anything they want.
         if execStartupScript:
@@ -533,28 +574,41 @@ class Shell(editwindow.EditWindow):
         else:
             self.prompt()
         
+        outStart+=[0]
+        outEnd+=[self.GetLineCount()-2]
+        inStart+=[self.GetLineCount()-1]
         # Set all the line markers to the proper initial states...
         # Automatic handling failed...might work with all these updates ??
         for i in range(self.GetLineCount()):
             self.clearGroupingMarkers(i)
             self.clearIOMarkers(i)
-            if i==0:
+            if i in outStart:
                 self.MarkerAdd(i,GROUPING_START)
                 self.MarkerAdd(i,OUTPUT_START)
                 self.MarkerAdd(i,OUTPUT_BG)
-            elif i==self.GetLineCount()-2:
+            elif i in outEnd:
                 self.MarkerAdd(i,GROUPING_END)
                 self.MarkerAdd(i,OUTPUT_END)
                 self.MarkerAdd(i,OUTPUT_BG)
-            elif i==self.GetLineCount()-1:
+            elif i in inStart:
                 self.MarkerAdd(i,GROUPING_START)
                 self.MarkerAdd(i,INPUT_START)
+            elif i in inMiddle:
+                self.MarkerAdd(i,GROUPING_MIDDLE)
+                self.MarkerAdd(i,INPUT_MIDDLE)
+            elif i in inEnd:
+                self.MarkerAdd(i,GROUPING_END)
+                self.MarkerAdd(i,INPUT_END)
             else:
                 self.MarkerAdd(i,GROUPING_MIDDLE)
                 self.MarkerAdd(i,OUTPUT_MIDDLE)
                 self.MarkerAdd(i,OUTPUT_BG)
         
         self.SliceSelection=False
+        
+        ## NOTE:  See note at bottom of this file...
+        ## #seb: File drag and drop
+        ## self.SetDropTarget( FileDropTarget(self) )
         
         #ADD UNDO
         # Everywhere "ADD UNDO" appears, there may be new code needed to handle markers
@@ -593,7 +647,7 @@ class Shell(editwindow.EditWindow):
                 self.write(self.interp.introText,type='Output')
         except AttributeError:
             pass
-
+    
     def setBuiltinKeywords(self):
         """Create pseudo keywords as part of builtins.
 

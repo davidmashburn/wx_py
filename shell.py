@@ -1156,7 +1156,7 @@ class Shell(editwindow.EditWindow):
             # fallback.
             tippos = max(tippos, fallback)
             self.CallTipShow(tippos, tip)
-        
+    
     def OnCallTipAutoCompleteManually (self, shiftDown):
         """AutoComplete and Calltips manually."""
         if self.AutoCompActive():
