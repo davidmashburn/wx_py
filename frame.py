@@ -42,6 +42,8 @@ ID_PASTE_PLUS = wx.NewId()
 ID_WRAP = wx.NewId()
 ID_TOGGLE_MAXIMIZE = wx.NewId()
 ID_SHOW_LINENUMBERS = wx.NewId()
+ID_ENABLESHELLMODE = wx.NewId()
+ID_HIDEFOLDINGMARGIN = wx.NewId()
 ID_AUTO_SAVESETTINGS = wx.NewId()
 ID_SAVEHISTORY = wx.NewId()
 ID_SAVEHISTORYNOW = wx.NewId()
@@ -209,6 +211,13 @@ class Frame(wx.Frame):
         m.AppendMenu(ID_STARTUP, '&Startup', self.startupMenu, 'Startup Options')
 
         self.settingsMenu = wx.Menu()
+        if self.shellName=='PySlices':
+            self.settingsMenu.Append(ID_ENABLESHELLMODE,
+                                '&Enable Shell Mode',
+                                'Enable Shell Mode', wx.ITEM_CHECK)
+            self.settingsMenu.Append(ID_HIDEFOLDINGMARGIN,
+                                '&Hide Folding Margin',
+                                'Hide Folding Margin', wx.ITEM_CHECK)
         self.settingsMenu.Append(ID_AUTO_SAVESETTINGS,
                                  '&Auto Save Settings',
                                  'Automatically save settings on close', wx.ITEM_CHECK)
@@ -263,6 +272,8 @@ class Frame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.OnWrap, id=ID_WRAP)
         self.Bind(wx.EVT_MENU, self.OnToggleMaximize, id=ID_TOGGLE_MAXIMIZE)
         self.Bind(wx.EVT_MENU, self.OnShowLineNumbers, id=ID_SHOW_LINENUMBERS)
+        self.Bind(wx.EVT_MENU, self.OnEnableShellMode, id=ID_ENABLESHELLMODE)
+        self.Bind(wx.EVT_MENU, self.OnHideFoldingMargin, id=ID_HIDEFOLDINGMARGIN)
         self.Bind(wx.EVT_MENU, self.OnAutoSaveSettings, id=ID_AUTO_SAVESETTINGS)
         self.Bind(wx.EVT_MENU, self.OnSaveHistory, id=ID_SAVEHISTORY)
         self.Bind(wx.EVT_MENU, self.OnSaveHistoryNow, id=ID_SAVEHISTORYNOW)
@@ -302,6 +313,8 @@ class Frame(wx.Frame):
         self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateMenu, id=ID_CALLTIPS_INSERT)
         self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateMenu, id=ID_WRAP)
         self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateMenu, id=ID_SHOW_LINENUMBERS)
+        self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateMenu, id=ID_ENABLESHELLMODE)
+        self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateMenu, id=ID_HIDEFOLDINGMARGIN)
         self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateMenu, id=ID_AUTO_SAVESETTINGS)
         self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateMenu, id=ID_SAVESETTINGS)
         self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateMenu, id=ID_DELSETTINGSFILE)
@@ -463,6 +476,12 @@ class Frame(wx.Frame):
     def OnClearHistory(self, event):
         self.shell.clearHistory()
 
+    def OnEnableShellMode(self, event):
+        self.enableShellMode = event.IsChecked()
+    
+    def OnHideFoldingMargin(self, event):
+        self.hideFoldingMargin = event.IsChecked()
+    
     def OnAutoSaveSettings(self, event):
         self.autoSaveSettings = event.IsChecked()
 
@@ -585,6 +604,12 @@ class Frame(wx.Frame):
 
             elif id == ID_SHOW_LINENUMBERS:
                 event.Check(win.lineNumbers)
+            elif id == ID_ENABLESHELLMODE:
+                event.Check(self.enableShellMode)
+                event.Enable(self.config is not None)
+            elif id == ID_HIDEFOLDINGMARGIN:
+                event.Check(self.hideFoldingMargin)
+                event.Enable(self.config is not None)
             elif id == ID_AUTO_SAVESETTINGS:
                 event.Check(self.autoSaveSettings)
                 event.Enable(self.config is not None)
@@ -694,10 +719,14 @@ class ShellFrameMixin:
         # We need this one before we have a chance to load the settings...
         self.execStartupScript = True
         self.showPySlicesTutorial = True
+        self.enableShellMode = False
+        self.hideFoldingMargin = False
         if self.config:
             self.execStartupScript = self.config.ReadBool('Options/ExecStartupScript', True)
+            
             self.showPySlicesTutorial = self.config.ReadBool('Options/ShowPySlicesTutorial', True)
-        print '1', self.showPySlicesTutorial
+            self.enableShellMode = self.config.ReadBool('Options/EnableShellMode', True)
+            self.hideFoldingMargin = self.config.ReadBool('Options/HideFoldingMargin', True)
     
     def OnHelp(self, event):
         """Display a Help window."""
@@ -719,18 +748,26 @@ class ShellFrameMixin:
             self.autoSaveSettings = self.config.ReadBool('Options/AutoSaveSettings', False)
             self.execStartupScript = self.config.ReadBool('Options/ExecStartupScript', True)
             self.autoSaveHistory  = self.config.ReadBool('Options/AutoSaveHistory', False)
+            
+            self.showPySlicesTutorial = self.config.ReadBool('Options/ShowPySlicesTutorial', True)
+            self.enableShellMode = self.config.ReadBool('Options/EnableShellMode', True)
+            self.hideFoldingMargin = self.config.ReadBool('Options/HideFoldingMargin', True)
+            
             self.LoadHistory()
 
 
-    def SaveSettings(self):
+    def SaveSettings(self,force):
         if self.config is not None:
-            # always save this one
+            # always save these
             self.config.WriteBool('Options/AutoSaveSettings', self.autoSaveSettings)
-            self.config.WriteBool('Options/ShowPySlicesTutorial', self.showPySlicesTutorial)
-            if self.autoSaveSettings:
+            
+            if self.autoSaveSettings or force:
                 self.config.WriteBool('Options/AutoSaveHistory', self.autoSaveHistory)
                 self.config.WriteBool('Options/ExecStartupScript', self.execStartupScript)
+                
                 self.config.WriteBool('Options/ShowPySlicesTutorial', self.showPySlicesTutorial)
+                self.config.WriteBool('Options/EnableShellMode', self.enableShellMode)
+                self.config.WriteBool('Options/HideFoldingMargin', self.hideFoldingMargin)
             if self.autoSaveHistory:
                 self.SaveHistory()
 

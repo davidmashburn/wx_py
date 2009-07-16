@@ -33,7 +33,8 @@ class Crust(wx.SplitterWindow):
                  rootIsNamespace=True, intro='', locals=None,
                  InterpClass=None,
                  startupScript=None, execStartupScript=True,
-                 shellName='PyCrust', config=None, # added config
+                 shellName='PyCrust', showPySlicesTutorial=True,
+                 enableShellMode=False, hideFoldingMargin=False, config=None, # added config
                  *args, **kwds):
         """Create Crust instance."""
         wx.SplitterWindow.__init__(self, parent, id, pos, size, style, name)
@@ -45,17 +46,25 @@ class Crust(wx.SplitterWindow):
         style = self.GetWindowStyle()
         self.SetWindowStyle(style & ~wx.TAB_TRAVERSAL)
         
-        if shellName=='PyCrust': shellClass = Shell
-        elif shellName=='PySlices': shellClass = Slice_Shell
-        else:
-            print 'Unsupported Shell Name!',shellName
-        
-        self.shell = shellClass(parent=self, introText=intro,
+        if shellName=='PyCrust':
+            self.shell = Shell(parent=self, introText=intro,
                                 locals=locals, InterpClass=InterpClass,
                                 startupScript=startupScript,
                                 execStartupScript=execStartupScript,
                                 config=config, # added config
                                 *args, **kwds)
+        elif shellName=='PySlices':
+            self.shell = Slice_Shell(parent=self, introText=intro,
+                                locals=locals, InterpClass=InterpClass,
+                                startupScript=startupScript,
+                                execStartupScript=execStartupScript,
+                                showPySlicesTutorial=showPySlicesTutorial,
+                                enableShellMode=enableShellMode,
+                                hideFoldingMargin=hideFoldingMargin,
+                                config=config, # added config
+                                *args, **kwds)
+        else:
+            print 'Unsupported Shell Name!',shellName
         
         self.editor = self.shell
         if rootObject is None:
@@ -317,7 +326,9 @@ class CrustFrame(frame.Frame, frame.ShellFrameMixin):
                            InterpClass=InterpClass,
                            startupScript=self.startupScript,
                            execStartupScript=self.execStartupScript,
-                           shellName=shellName,config=config, # added config
+                           shellName=shellName, showPySlicesTutorial=self.showPySlicesTutorial,
+                           enableShellMode=self.enableShellMode, hideFoldingMargin=self.hideFoldingMargin,
+                           config=config, # added config
                            *args, **kwds)
         self.shell = self.crust.shell
 
@@ -378,7 +389,7 @@ class CrustFrame(frame.Frame, frame.ShellFrameMixin):
 
     def SaveSettings(self, force=False):
         if self.config is not None:
-            frame.ShellFrameMixin.SaveSettings(self)
+            frame.ShellFrameMixin.SaveSettings(self,force)
             if self.autoSaveSettings or force:
                 frame.Frame.SaveSettings(self, self.config)
                 self.crust.SaveSettings(self.config)

@@ -185,14 +185,16 @@ class ShellFrame(frame.Frame, frame.ShellFrameMixin):
         
         if size == wx.DefaultSize:
             self.SetSize((750, 525))
-
+        
         intro = 'PySlices %s - The Flakiest Python Shell... Cut Up!' % VERSION
         self.SetStatusText(intro.replace('\n', ', '))
         self.shell = Shell(parent=self, id=-1, introText=intro,
                            locals=locals, InterpClass=InterpClass,
                            startupScript=self.startupScript,
                            execStartupScript=self.execStartupScript,
-                           showPySlicesTutorial=self.showPySlicesTutorial
+                           showPySlicesTutorial=self.showPySlicesTutorial,
+                           enableShellMode=self.enableShellMode,
+                           hideFoldingMargin=self.hideFoldingMargin,
                            *args, **kwds)
 
         # Override the shell so that status messages go to the status bar.
@@ -374,7 +376,8 @@ class Shell(editwindow.EditWindow):
                  size=wx.DefaultSize, style=wx.CLIP_CHILDREN,
                  introText='', locals=None, InterpClass=None,
                  startupScript=None, execStartupScript=True,
-                 showPySlicesTutorial=True, config=None, *args, **kwds): # added config
+                 showPySlicesTutorial=True,enableShellMode=False,
+                 hideFoldingMargin=False, config=None, *args, **kwds): # added config
         """Create Shell instance."""
         editwindow.EditWindow.__init__(self, parent, id, pos, size, style)
         self.wrap()
@@ -437,13 +440,13 @@ class Shell(editwindow.EditWindow):
             # margin 1 is already defined for the line numbers -- may eventually change it back to 0 like it aught to be...
             self.SetMarginType(2, stc.STC_MARGIN_SYMBOL)
             self.SetMarginType(3, stc.STC_MARGIN_SYMBOL)
-            self.SetMarginType(4, stc.STC_MARGIN_SYMBOL)
+            if not hideFoldingMargin: self.SetMarginType(4, stc.STC_MARGIN_SYMBOL)
             self.SetMarginWidth(2, 22)
             self.SetMarginWidth(3, 22)
-            self.SetMarginWidth(4, 12)
+            if not hideFoldingMargin: self.SetMarginWidth(4, 12)
             self.SetMarginSensitive(2,True)
             self.SetMarginSensitive(3,True)
-            self.SetMarginSensitive(4,True)
+            if not hideFoldingMargin: self.SetMarginSensitive(4,True)
             self.SetProperty("fold", "1")
             self.SetProperty("tab.timmy.whinge.level", "4") # tabs are bad --- use spaces
             self.SetMargins(0,0)
@@ -451,7 +454,7 @@ class Shell(editwindow.EditWindow):
             
             self.SetMarginMask(2, GROUPING_MASK | 1<<GROUPING_SELECTING )
             self.SetMarginMask(3, IO_MASK | 1<<IO_SELECTING ) # Display Markers -24...
-            self.SetMarginMask(4, stc.STC_MASK_FOLDERS)
+            if not hideFoldingMargin: self.SetMarginMask(4, stc.STC_MASK_FOLDERS)
             # Set the mask for the line markers, too...
             self.SetMarginMask(1, 0)
             
@@ -468,17 +471,22 @@ class Shell(editwindow.EditWindow):
             self.MarkerDefine(GROUPING_MIDDLE,       stc.STC_MARK_VLINE,    "white", grouping_color)
             self.MarkerDefine(GROUPING_END,          stc.STC_MARK_LCORNER,  "white", grouping_color)
             
-            mode='SlicesMode'
-            if mode=='ShellMode':
-                self.MarkerDefine(INPUT_START,           stc.STC_MARK_ARROWS,    input_color, "white")
-                self.MarkerDefine(INPUT_START_FOLDED,    stc.STC_MARK_BOXPLUS,   "white", input_color)
-                self.MarkerDefine(INPUT_MIDDLE,          stc.STC_MARK_DOTDOTDOT, input_color, "white")
-                self.MarkerDefine(INPUT_END,             stc.STC_MARK_DOTDOTDOT, input_color, "white")
-            elif mode=='SlicesMode':
+            if enableShellMode:
+                self.mode='ShellMode'
+            else:
+                self.mode='SlicesMode'
+            
+            self.execOnNextReturn=False
+            if self.mode=='SlicesMode':
                 self.MarkerDefine(INPUT_START,           stc.STC_MARK_BOXMINUS, "white", input_color)
                 self.MarkerDefine(INPUT_START_FOLDED,    stc.STC_MARK_BOXPLUS,  "white", input_color)
                 self.MarkerDefine(INPUT_MIDDLE,          stc.STC_MARK_VLINE,    "white", input_color)
                 self.MarkerDefine(INPUT_END,             stc.STC_MARK_LCORNER,  "white", input_color)
+            elif self.mode=='ShellMode':
+                self.MarkerDefine(INPUT_START,           stc.STC_MARK_ARROWS,    input_color, "white")
+                self.MarkerDefine(INPUT_START_FOLDED,    stc.STC_MARK_BOXPLUS,   "white", input_color)
+                self.MarkerDefine(INPUT_MIDDLE,          stc.STC_MARK_DOTDOTDOT, input_color, "white")
+                self.MarkerDefine(INPUT_END,             stc.STC_MARK_DOTDOTDOT, input_color, "white")
             
             self.MarkerDefine(OUTPUT_START,          stc.STC_MARK_BOXMINUS, "white", output_color)
             self.MarkerDefine(OUTPUT_START_FOLDED,   stc.STC_MARK_BOXPLUS,  "white", output_color)
@@ -544,9 +552,7 @@ class Shell(editwindow.EditWindow):
         # Display the introductory banner information.
         self.showIntro(introText)
         
-        self.LoadSettings(config) # added config
-        
-        if self.showPySlicesTutorial:
+        if showPySlicesTutorial:
             self.write(tutorialText,'Output')
             outStart=[4,13]
             outEnd=[3,9]
@@ -559,6 +565,8 @@ class Shell(editwindow.EditWindow):
             inStart=[]
             inMiddle=[]
             inEnd=[]
+        
+        self.LoadSettings(config) # added config
         
         # Assign some pseudo keywords to the interpreter's namespace.
         self.setBuiltinKeywords()
@@ -1337,9 +1345,31 @@ class Shell(editwindow.EditWindow):
         if self.noteMode:
             event.Skip()
             return
-
+        
+        doLineBreak=False
+        doSubmitCommand=False
+        
         # Return is used to insert a line break.
-        if (not controlDown and not shiftDown and not altDown) and key in [wx.WXK_RETURN,]:# wx.WXK_NUMPAD_ENTER]:
+        if ((not controlDown and not shiftDown and not altDown) and key in [wx.WXK_RETURN,]):
+            if self.mode=='SlicesMode':
+                doLineBreak=True
+            elif self.mode=='ShellMode':
+                if self.execOnNextReturn==False:
+                    doLineBreak=True
+                else: # Now two returns runs the command...
+                    print 'haha!'
+                    doSubmitCommand=True
+        # Enter (Shift/Ctrl + Enter/Return) is used to submit a command to the interpreter.
+        elif key in [wx.WXK_NUMPAD_ENTER,] or ((shiftDown or controlDown) and key in [wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER]):
+            if self.mode=='SlicesMode':
+                doSubmitCommand=True
+            elif self.mode=='ShellMode':
+                doLineBreak=True
+        
+        #Only relevant in ShellMode...
+        self.execOnNextReturn=False
+        
+        if doLineBreak or doSubmitCommand:
             if self.CallTipActive():
                 self.CallTipCancel()
             elif self.SliceSelection:
@@ -1350,19 +1380,16 @@ class Shell(editwindow.EditWindow):
                     elif self.MarkerGet(i) & 1<<IO_SELECTING:
                         self.DoMarginClick(i, 3, shiftDown, controlDown)
                         break
-            else:
+            elif doLineBreak:
                 self.insertLineBreak()
+                #Only relevant in ShellMode...
+                self.execOnNextReturn=True
+            elif doSubmitCommand:
+                self.DeleteOutputSlicesAfter()
             
-        # Enter (Shift+Return) (Shift+Enter) is used to submit a command to the interpreter.
-        elif key in [wx.WXK_NUMPAD_ENTER,] or (shiftDown and key in [wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER]):
-            if self.CallTipActive():
-                self.CallTipCancel()
-            self.DeleteOutputSlicesAfter()
-            
-            self.processLine()
-            
-        # Ctrl+Return (Ctrl+Enter) is used to complete Text (from already typed words)
-        elif controlDown and key in [wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER]:
+                self.processLine()
+        # Ctrl+Space is used to complete Text (from already typed words)
+        elif controlDown and key in [wx.WXK_SPACE]:
             self.OnShowCompHistory()
             
         # Let Ctrl-Alt-* get handled normally.
@@ -3082,6 +3109,9 @@ class Shell(editwindow.EditWindow):
 
         self.autoCallTip = config.ReadBool('Options/AutoCallTip', True)
         self.callTipInsert = config.ReadBool('Options/CallTipInsert', True)
+        
+        self.enableShellMode = config.ReadBool('Options/EnableShellMode', True)
+        self.hideFoldingMargin = config.ReadBool('Options/HideFoldingMargin', True)
         self.showPySlicesTutorial = config.ReadBool('Options/ShowPySlicesTutorial', True)
         self.SetWrapMode(config.ReadBool('View/WrapMode', True))
 
@@ -3100,7 +3130,6 @@ class Shell(editwindow.EditWindow):
         config.WriteBool('Options/AutoCompleteIncludeDouble', self.autoCompleteIncludeDouble)
         config.WriteBool('Options/AutoCallTip', self.autoCallTip)
         config.WriteBool('Options/CallTipInsert', self.callTipInsert)
-        #config.WriteBool('Options/ShowPySlicesTutorial', self.showPySlicesTutorial)
         config.WriteBool('View/WrapMode', self.GetWrapMode())
         config.WriteBool('View/ShowLineNumbers', self.lineNumbers)
         config.WriteInt('View/Zoom/Shell', self.GetZoom())
