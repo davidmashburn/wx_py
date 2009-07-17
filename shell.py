@@ -241,7 +241,7 @@ class Shell(editwindow.EditWindow):
                  size=wx.DefaultSize, style=wx.CLIP_CHILDREN,
                  introText='', locals=None, InterpClass=None,
                  startupScript=None, execStartupScript=True,
-                 config=None, *args, **kwds): # added config
+                 *args, **kwds):
         """Create Shell instance."""
         editwindow.EditWindow.__init__(self, parent, id, pos, size, style)
         self.wrap()

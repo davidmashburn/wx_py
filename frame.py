@@ -750,8 +750,8 @@ class ShellFrameMixin:
             self.autoSaveHistory  = self.config.ReadBool('Options/AutoSaveHistory', False)
             
             self.showPySlicesTutorial = self.config.ReadBool('Options/ShowPySlicesTutorial', True)
-            self.enableShellMode = self.config.ReadBool('Options/EnableShellMode', True)
-            self.hideFoldingMargin = self.config.ReadBool('Options/HideFoldingMargin', True)
+            self.enableShellMode = self.config.ReadBool('Options/EnableShellMode', False)
+            self.hideFoldingMargin = self.config.ReadBool('Options/HideFoldingMargin', False)
             
             self.LoadHistory()
 

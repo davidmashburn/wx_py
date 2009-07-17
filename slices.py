@@ -139,30 +139,40 @@ IO_MIDDLE_MASK = ( 1<<INPUT_MIDDLE | 1<<OUTPUT_MIDDLE )
 IO_END_MASK = ( 1<<INPUT_END | 1<<OUTPUT_END )
 
 tutorialText = """
-PySlices, the newest member of the Py suite, is a modified
-version of PyCrust that supports multi-line commands in
-the form of "slices."  Slices are either for input (red
-margin = active, editable) or output (blue = frozen, not
-editable).  Commands in slices can be on more than one line,
-like with Mathematica or Sage.  For example, the command:
+
+PySlices is the newest member of the Py suite!
+It is a modified version of PyCrust that supports multi-line commands.
+
+Input and output are contained in "Slices" shown as markers in the left margin.
+Input Slices have red margins (active, editable).
+Output Slices have blue margins (frozen, not editable).
+
+Commands in slices can be on more than one line, like with Sage or Mathematica.
+For example, the command:
 a=1
 b=2
 print a+b
-will all run in sequence, much like a script.  Try running
-the above command with Enter, Ctrl-Return, or Shift-Return.
-Previous commands (old slices) can be re-edited and run
-again in place. Slices can also be:
- * selceted (click on margin, Shift for multiple selection)
- * folded (click margin twice)
+will all run in sequence, much like a script.
+Try running the above Input Slice by clicking somewhere in its text and
+using Enter, Ctrl-Return, or Shift-Return to execute.
+Previous commands (Old Slices) can be re-edited and run again in place.
+
+Slices can also be:
+ * selceted (click on the margin, Shift for multiple selection)
+ * folded (click the margin twice)
  * selected and deleted (hit delete while selected)
  * divided (Ctrl-D)
  * and merged (Ctrl-M while selecting adjacent, like-colored slices)
-Try deleting the slice above this one by clicking on the
-colored margin.
-If you want a more traditional shell feel, try enabling shell mode
-in "Options->Settings->Shell Mode" or using PyCrust.
+Try deleting the slice above this one by clicking on the red margin.
+
+If you want a more traditional shell feel, try enabling "Shell Mode" in
+"Options->Settings->Shell Mode" (or try PyCrust).
+In Shell Mode, two returns in a row executes the command, and
+    Ctrl-Return and Shift-Return always print newlines.
+
 To disable this message on startup, go to
 "Options->Startup->Show PySlices tutorial"
+
 PySlices may not be the best thing since sliced bread, but
 I hope it makes using Python a little bit sweeter!
 """
@@ -377,7 +387,7 @@ class Shell(editwindow.EditWindow):
                  introText='', locals=None, InterpClass=None,
                  startupScript=None, execStartupScript=True,
                  showPySlicesTutorial=True,enableShellMode=False,
-                 hideFoldingMargin=False, config=None, *args, **kwds): # added config
+                 hideFoldingMargin=False, *args, **kwds):
         """Create Shell instance."""
         editwindow.EditWindow.__init__(self, parent, id, pos, size, style)
         self.wrap()
@@ -440,13 +450,13 @@ class Shell(editwindow.EditWindow):
             # margin 1 is already defined for the line numbers -- may eventually change it back to 0 like it aught to be...
             self.SetMarginType(2, stc.STC_MARGIN_SYMBOL)
             self.SetMarginType(3, stc.STC_MARGIN_SYMBOL)
-            if not hideFoldingMargin: self.SetMarginType(4, stc.STC_MARGIN_SYMBOL)
+            self.SetMarginType(4, stc.STC_MARGIN_SYMBOL)
             self.SetMarginWidth(2, 22)
             self.SetMarginWidth(3, 22)
-            if not hideFoldingMargin: self.SetMarginWidth(4, 12)
+            self.SetMarginWidth(4, 12)
             self.SetMarginSensitive(2,True)
             self.SetMarginSensitive(3,True)
-            if not hideFoldingMargin: self.SetMarginSensitive(4,True)
+            self.SetMarginSensitive(4,True)
             self.SetProperty("fold", "1")
             self.SetProperty("tab.timmy.whinge.level", "4") # tabs are bad --- use spaces
             self.SetMargins(0,0)
@@ -454,9 +464,13 @@ class Shell(editwindow.EditWindow):
             
             self.SetMarginMask(2, GROUPING_MASK | 1<<GROUPING_SELECTING )
             self.SetMarginMask(3, IO_MASK | 1<<IO_SELECTING ) # Display Markers -24...
-            if not hideFoldingMargin: self.SetMarginMask(4, stc.STC_MASK_FOLDERS)
+            self.SetMarginMask(4, stc.STC_MASK_FOLDERS)
             # Set the mask for the line markers, too...
             self.SetMarginMask(1, 0)
+            
+            if hideFoldingMargin:
+                self.SetMarginWidth(4, 0)
+            self.hideFoldingMargin=hideFoldingMargin
             
             sel_color="#E0E0E0"
             grouping_color="black"
@@ -552,21 +566,16 @@ class Shell(editwindow.EditWindow):
         # Display the introductory banner information.
         self.showIntro(introText)
         
+        outStart=outEnd=inStart=inMiddle=inEnd=[]
+        
+        # Make "executed startup script move to the top..."
         if showPySlicesTutorial:
             self.write(tutorialText,'Output')
-            outStart=[4,13]
-            outEnd=[3,9]
-            inStart=[10]
-            inMiddle=[11]
-            inEnd=[12]
-        else:
-            outStart=[]
-            outEnd=[]
-            inStart=[]
-            inMiddle=[]
-            inEnd=[]
-        
-        self.LoadSettings(config) # added config
+            outStart=[5,17]
+            outEnd=[4,13]
+            inStart=[14]
+            inMiddle=[15]
+            inEnd=[16]
         
         # Assign some pseudo keywords to the interpreter's namespace.
         self.setBuiltinKeywords()
@@ -594,11 +603,11 @@ class Shell(editwindow.EditWindow):
             if i in outStart:
                 self.MarkerAdd(i,GROUPING_START)
                 self.MarkerAdd(i,OUTPUT_START)
-                self.MarkerAdd(i,OUTPUT_BG)
+                #self.MarkerAdd(i,OUTPUT_BG)
             elif i in outEnd:
                 self.MarkerAdd(i,GROUPING_END)
                 self.MarkerAdd(i,OUTPUT_END)
-                self.MarkerAdd(i,OUTPUT_BG)
+                #self.MarkerAdd(i,OUTPUT_BG)
             elif i in inStart:
                 self.MarkerAdd(i,GROUPING_START)
                 self.MarkerAdd(i,INPUT_START)
@@ -611,7 +620,7 @@ class Shell(editwindow.EditWindow):
             else:
                 self.MarkerAdd(i,GROUPING_MIDDLE)
                 self.MarkerAdd(i,OUTPUT_MIDDLE)
-                self.MarkerAdd(i,OUTPUT_BG)
+                #self.MarkerAdd(i,OUTPUT_BG)
         
         self.SliceSelection=False
         
@@ -625,6 +634,37 @@ class Shell(editwindow.EditWindow):
         
         wx.CallAfter(self.ScrollToLine, 0)
 
+    def ToggleShellMode(self,enableShellMode=None):
+        if enableShellMode==None:
+            if self.mode=='ShellMode':  self.mode='SlicesMode'
+            elif self.mode=='SlicesMode': self.mode='ShellMode'
+        elif enableShellMode:
+            self.mode='ShellMode'
+        else:
+            self.mode='SlicesMode'
+        
+        input_color="red"
+        if self.mode=='SlicesMode':
+            self.MarkerDefine(INPUT_START,           stc.STC_MARK_BOXMINUS, "white", input_color)
+            self.MarkerDefine(INPUT_START_FOLDED,    stc.STC_MARK_BOXPLUS,  "white", input_color)
+            self.MarkerDefine(INPUT_MIDDLE,          stc.STC_MARK_VLINE,    "white", input_color)
+            self.MarkerDefine(INPUT_END,             stc.STC_MARK_LCORNER,  "white", input_color)
+        elif self.mode=='ShellMode':
+            self.MarkerDefine(INPUT_START,           stc.STC_MARK_ARROWS,    input_color, "white")
+            self.MarkerDefine(INPUT_START_FOLDED,    stc.STC_MARK_BOXPLUS,   "white", input_color)
+            self.MarkerDefine(INPUT_MIDDLE,          stc.STC_MARK_DOTDOTDOT, input_color, "white")
+            self.MarkerDefine(INPUT_END,             stc.STC_MARK_DOTDOTDOT, input_color, "white")
+    
+    def ToggleFoldingMargin(self,hideFoldingMargin=None):
+        if hideFoldingMargin==None:
+            self.hideFoldingMargin = not self.hideFoldingMargin
+        else:
+            self.hideFoldingMargin = hideFoldingMargin
+        
+        if self.hideFoldingMargin:
+            self.SetMarginWidth(4, 0)
+        else:
+            self.SetMarginWidth(4, 12)
 
     def clearHistory(self):
         self.history = []
@@ -707,7 +747,7 @@ class Shell(editwindow.EditWindow):
     def BreakTextIntoCommands(self,text):
         """Turn a text block into multiple multi-line commands."""
         
-        text = text.lstrip()
+        #text = text.lstrip() # This should not be done!
         text = self.fixLineEndings(text)
         text = self.lstripPrompt(text)
         text = text.replace(os.linesep, '\n')
@@ -722,9 +762,17 @@ class Shell(editwindow.EditWindow):
             # TODO : Also, should ignore blank lines or lines beginning with # (outside strings...)
             # TODO : Also, watch for \'s
             # TODO : Working?--Need to modify this to count (,[,{,parantheses, ', ", ''', """ etc...
+            
+            # Get the first alnum word:
+            first_word=[]
+            for i in lstrip:
+                if i.isalnum():
+                    first_word.append(i)
+                else: break
+            first_word = ''.join(first_word)
+            
             if line.strip() != '' and lstrip == line and \
-                    lstrip[:4] not in ['else','elif'] and \
-                    lstrip[:6] != 'except':
+               first_word not in ['else','elif','except','finally']:
                 # New command.
                 if command:
                     # Add the previous command to the list.
@@ -1357,8 +1405,16 @@ class Shell(editwindow.EditWindow):
                 if self.execOnNextReturn==False:
                     doLineBreak=True
                 else: # Now two returns runs the command...
-                    print 'haha!'
                     doSubmitCommand=True
+                    cpos=self.GetCurrentPos()
+                    cline=self.GetCurrentLine()
+                    self.SetSelection(self.PositionFromLine(cline),cpos)
+                    self.ReplaceSelection('')
+                    cpos=self.GetCurrentPos()
+                    if cpos>0:
+                        self.BackspaceWMarkers()
+                        self.SetSelection(cpos,cpos-1)
+                        self.ReplaceSelection('')
         # Enter (Shift/Ctrl + Enter/Return) is used to submit a command to the interpreter.
         elif key in [wx.WXK_NUMPAD_ENTER,] or ((shiftDown or controlDown) and key in [wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER]):
             if self.mode=='SlicesMode':
@@ -1574,6 +1630,8 @@ class Shell(editwindow.EditWindow):
         
         # Don't allow line transposition.
         elif controlDown and key in (ord('T'), ord('t')):
+            self.ToggleShellMode()
+            self.ToggleFoldingMargin()
             # TODO : Allow line transposition eventually ??
             # TODO : Will have to adjust markers accordingly and test if allowed...
             #event.Skip()
@@ -2111,6 +2169,7 @@ class Shell(editwindow.EditWindow):
             # I could do the following, but I don't really like it!
             #if useMultiCommand:
             #    self.SplitSlice()
+        
         if not silent:
             self.MarkerAdd(self.GetIOSlice()[0],OUTPUT_BG)
         
@@ -3110,9 +3169,6 @@ class Shell(editwindow.EditWindow):
         self.autoCallTip = config.ReadBool('Options/AutoCallTip', True)
         self.callTipInsert = config.ReadBool('Options/CallTipInsert', True)
         
-        self.enableShellMode = config.ReadBool('Options/EnableShellMode', True)
-        self.hideFoldingMargin = config.ReadBool('Options/HideFoldingMargin', True)
-        self.showPySlicesTutorial = config.ReadBool('Options/ShowPySlicesTutorial', True)
         self.SetWrapMode(config.ReadBool('View/WrapMode', True))
 
         self.lineNumbers = config.ReadBool('View/ShowLineNumbers', True)
