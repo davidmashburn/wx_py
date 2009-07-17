@@ -566,7 +566,7 @@ class Shell(editwindow.EditWindow):
         # Display the introductory banner information.
         self.showIntro(introText)
         
-        outStart=outEnd=inStart=inMiddle=inEnd=[]
+        outStart,outEnd,inStart,inMiddle,inEnd = [[],[],[],[],[]]
         
         # Make "executed startup script move to the top..."
         if showPySlicesTutorial:

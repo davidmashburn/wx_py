@@ -43,7 +43,6 @@ ID_WRAP = wx.NewId()
 ID_TOGGLE_MAXIMIZE = wx.NewId()
 ID_SHOW_LINENUMBERS = wx.NewId()
 ID_ENABLESHELLMODE = wx.NewId()
-ID_HIDEFOLDINGMARGIN = wx.NewId()
 ID_AUTO_SAVESETTINGS = wx.NewId()
 ID_SAVEHISTORY = wx.NewId()
 ID_SAVEHISTORYNOW = wx.NewId()
@@ -58,6 +57,7 @@ ID_SETTINGS = wx.NewId()
 ID_FIND = wx.ID_FIND
 ID_FINDNEXT = wx.NewId()
 ID_SHOWTOOLS = wx.NewId()
+ID_HIDEFOLDINGMARGIN = wx.NewId()
 
 
 
@@ -162,7 +162,11 @@ class Frame(wx.Frame):
             m.Append(ID_SHOWTOOLS,
                      'Show &Tools\tF4',
                      'Show the filling and other tools', wx.ITEM_CHECK)
-
+        if self.shellName=='PySlices':
+            m.Append(ID_HIDEFOLDINGMARGIN,
+                                '&Hide Folding Margin',
+                                'Hide Folding Margin', wx.ITEM_CHECK)
+        
         # Options
         m = self.autocompMenu = wx.Menu()
         m.Append(ID_AUTOCOMP_SHOW, 'Show &Auto Completion\tCtrl+Shift+A',
@@ -215,9 +219,6 @@ class Frame(wx.Frame):
             self.settingsMenu.Append(ID_ENABLESHELLMODE,
                                 '&Enable Shell Mode',
                                 'Enable Shell Mode', wx.ITEM_CHECK)
-            self.settingsMenu.Append(ID_HIDEFOLDINGMARGIN,
-                                '&Hide Folding Margin',
-                                'Hide Folding Margin', wx.ITEM_CHECK)
         self.settingsMenu.Append(ID_AUTO_SAVESETTINGS,
                                  '&Auto Save Settings',
                                  'Automatically save settings on close', wx.ITEM_CHECK)
@@ -273,7 +274,6 @@ class Frame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.OnToggleMaximize, id=ID_TOGGLE_MAXIMIZE)
         self.Bind(wx.EVT_MENU, self.OnShowLineNumbers, id=ID_SHOW_LINENUMBERS)
         self.Bind(wx.EVT_MENU, self.OnEnableShellMode, id=ID_ENABLESHELLMODE)
-        self.Bind(wx.EVT_MENU, self.OnHideFoldingMargin, id=ID_HIDEFOLDINGMARGIN)
         self.Bind(wx.EVT_MENU, self.OnAutoSaveSettings, id=ID_AUTO_SAVESETTINGS)
         self.Bind(wx.EVT_MENU, self.OnSaveHistory, id=ID_SAVEHISTORY)
         self.Bind(wx.EVT_MENU, self.OnSaveHistoryNow, id=ID_SAVEHISTORYNOW)
@@ -286,7 +286,8 @@ class Frame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.OnFindText, id=ID_FIND)
         self.Bind(wx.EVT_MENU, self.OnFindNext, id=ID_FINDNEXT)
         self.Bind(wx.EVT_MENU, self.OnToggleTools, id=ID_SHOWTOOLS)
-
+        self.Bind(wx.EVT_MENU, self.OnHideFoldingMargin, id=ID_HIDEFOLDINGMARGIN)
+        
         self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateMenu, id=ID_NEW)
         self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateMenu, id=ID_OPEN)
         self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateMenu, id=ID_REVERT)
@@ -314,7 +315,6 @@ class Frame(wx.Frame):
         self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateMenu, id=ID_WRAP)
         self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateMenu, id=ID_SHOW_LINENUMBERS)
         self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateMenu, id=ID_ENABLESHELLMODE)
-        self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateMenu, id=ID_HIDEFOLDINGMARGIN)
         self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateMenu, id=ID_AUTO_SAVESETTINGS)
         self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateMenu, id=ID_SAVESETTINGS)
         self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateMenu, id=ID_DELSETTINGSFILE)
@@ -327,6 +327,7 @@ class Frame(wx.Frame):
         self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateMenu, id=ID_FIND)
         self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateMenu, id=ID_FINDNEXT)
         self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateMenu, id=ID_SHOWTOOLS)
+        self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateMenu, id=ID_HIDEFOLDINGMARGIN)
         
         self.Bind(wx.EVT_ACTIVATE, self.OnActivate)
         self.Bind(wx.EVT_FIND, self.OnFindNext)
@@ -507,9 +508,11 @@ class Frame(wx.Frame):
             
     def OnExecStartupScript(self, event):
         self.execStartupScript = event.IsChecked()
+        self.SaveSettings(force=True)
     
     def OnShowPySlicesTutorial(self,event):
         self.showPySlicesTutorial = event.IsChecked()
+        self.SaveSettings(force=True)
 
     def OnFindText(self, event):
         if self.findDlg is not None:
@@ -607,9 +610,6 @@ class Frame(wx.Frame):
             elif id == ID_ENABLESHELLMODE:
                 event.Check(self.enableShellMode)
                 event.Enable(self.config is not None)
-            elif id == ID_HIDEFOLDINGMARGIN:
-                event.Check(self.hideFoldingMargin)
-                event.Enable(self.config is not None)
             elif id == ID_AUTO_SAVESETTINGS:
                 event.Check(self.autoSaveSettings)
                 event.Enable(self.config is not None)
@@ -647,7 +647,11 @@ class Frame(wx.Frame):
 
             elif id == ID_SHOWTOOLS:
                 event.Check(self.ToolsShown())
-                                             
+            
+            elif id == ID_HIDEFOLDINGMARGIN:
+                event.Check(self.hideFoldingMargin)
+                event.Enable(self.config is not None)
+            
             else:
                 event.Enable(False)
         except AttributeError:

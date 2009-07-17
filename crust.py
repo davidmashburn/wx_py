@@ -375,7 +375,16 @@ class CrustFrame(frame.Frame, frame.ShellFrameMixin):
     def OnHelp(self, event):
         """Show a help dialog."""
         frame.ShellFrameMixin.OnHelp(self, event)
-
+    
+    def OnEnableShellMode(self,event):
+        """Change between Slices Mode and Shell Mode"""
+        frame.Frame.OnEnableShellMode(self,event)
+        self.shell.ToggleShellMode(self.enableShellMode)
+    
+    def OnHideFoldingMargin(self,event):
+        """Change between Slices Mode and Shell Mode"""
+        frame.Frame.OnHideFoldingMargin(self,event)
+        self.shell.ToggleFoldingMargin(self.hideFoldingMargin)
 
     def LoadSettings(self):
         if self.config is not None:
