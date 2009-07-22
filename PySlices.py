@@ -7,7 +7,8 @@
 import __main__
 original = __main__.__dict__.keys()
 
-__author__ = "Patrick K. O'Brien <pobrien@orbtech.com> / David N. Mashburn <CHOOSE_EMAIL>"
+__author__ = "Patrick K. O'Brien <pobrien@orbtech.com> / "
+__author__ += "David N. Mashburn <david.n.mashburn@gmail.com>"
 __cvsid__ = "$Id: PySlices.py 36607 2005-12-30 23:02:03Z RD $" # Hmmm...
 __revision__ = "$Revision: 36607 $"[11:-2] #Hmmm...
 
@@ -29,7 +30,8 @@ class App(wx.App):
         self.config = wx.FileConfig(localFilename=fileName)
         self.config.SetRecordDefaults(True)
         
-        self.frame = py.crust.CrustFrame(config=self.config, dataDir=confDir,title='PySlices',shellName='PySlices')
+        self.frame = py.crust.CrustFrame(config=self.config, dataDir=confDir,
+                                         title='PySlices',shellName='PySlices')
 ##        self.frame.startupFileName = os.path.join(confDir,'pycrust_startup')
 ##        self.frame.historyFileName = os.path.join(confDir,'pycrust_history')
         self.frame.Show()

@@ -240,9 +240,12 @@ class SessionListing(wx.TextCtrl):
         style = (wx.TE_MULTILINE | wx.TE_READONLY |
                  wx.TE_RICH2 | wx.TE_DONTWRAP)
         wx.TextCtrl.__init__(self, parent, id, style=style)
-        dispatcher.connect(receiver=self.addHistory, signal="Shell.addHistory")
-        dispatcher.connect(receiver=self.clearHistory, signal="Shell.clearHistory")
-        dispatcher.connect(receiver=self.loadHistory, signal="Shell.loadHistory")
+        dispatcher.connect(receiver=self.addHistory,
+                           signal="Shell.addHistory")
+        dispatcher.connect(receiver=self.clearHistory,
+                           signal="Shell.clearHistory")
+        dispatcher.connect(receiver=self.loadHistory,
+                           signal="Shell.loadHistory")
 
         df = self.GetFont()
         font = wx.Font(df.GetPointSize(), wx.TELETYPE, wx.NORMAL, wx.NORMAL)
@@ -304,7 +307,8 @@ class CrustFrame(frame.Frame, frame.ShellFrameMixin):
                  shellName='PyCrust',
                  *args, **kwds):
         """Create CrustFrame instance."""
-        frame.Frame.__init__(self, parent, id, title, pos, size, style,shellName=shellName)
+        frame.Frame.__init__(self, parent, id, title, pos, size, style,
+                             shellName=shellName)
         frame.ShellFrameMixin.__init__(self, config, dataDir)
         
         if size == wx.DefaultSize:
@@ -324,8 +328,10 @@ class CrustFrame(frame.Frame, frame.ShellFrameMixin):
                            InterpClass=InterpClass,
                            startupScript=self.startupScript,
                            execStartupScript=self.execStartupScript,
-                           shellName=shellName, showPySlicesTutorial=self.showPySlicesTutorial,
-                           enableShellMode=self.enableShellMode, hideFoldingMargin=self.hideFoldingMargin,
+                           shellName=shellName,
+                           showPySlicesTutorial=self.showPySlicesTutorial,
+                           enableShellMode=self.enableShellMode,
+                           hideFoldingMargin=self.hideFoldingMargin,
                            *args, **kwds)
         self.shell = self.crust.shell
 

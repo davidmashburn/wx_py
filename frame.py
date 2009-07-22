@@ -156,8 +156,10 @@ class Frame(wx.Frame):
         m = self.viewMenu = wx.Menu()
         m.Append(ID_WRAP, '&Wrap Lines\tCtrl+Shift+W',
                  'Wrap lines at right edge', wx.ITEM_CHECK)
-        m.Append(ID_SHOW_LINENUMBERS, '&Show Line Numbers\tCtrl+Shift+L', 'Show Line Numbers', wx.ITEM_CHECK)
-        m.Append(ID_TOGGLE_MAXIMIZE, '&Toggle Maximize\tF11', 'Maximize/Restore Application')
+        m.Append(ID_SHOW_LINENUMBERS, '&Show Line Numbers\tCtrl+Shift+L',
+                 'Show Line Numbers', wx.ITEM_CHECK)
+        m.Append(ID_TOGGLE_MAXIMIZE, '&Toggle Maximize\tF11',
+                 'Maximize/Restore Application')
         if hasattr(self, 'ToggleTools'):
             m.Append(ID_SHOWTOOLS,
                      'Show &Tools\tF4',
@@ -726,11 +728,14 @@ class ShellFrameMixin:
         self.enableShellMode = False
         self.hideFoldingMargin = False
         if self.config:
-            self.execStartupScript = self.config.ReadBool('Options/ExecStartupScript', True)
-            
-            self.showPySlicesTutorial = self.config.ReadBool('Options/ShowPySlicesTutorial', True)
-            self.enableShellMode = self.config.ReadBool('Options/EnableShellMode', True)
-            self.hideFoldingMargin = self.config.ReadBool('Options/HideFoldingMargin', True)
+            self.execStartupScript = \
+                 self.config.ReadBool('Options/ExecStartupScript', True)
+            self.showPySlicesTutorial = \
+                 self.config.ReadBool('Options/ShowPySlicesTutorial', True)
+            self.enableShellMode = \
+                 self.config.ReadBool('Options/EnableShellMode', True)
+            self.hideFoldingMargin = \
+                 self.config.ReadBool('Options/HideFoldingMargin', True)
     
     def OnHelp(self, event):
         """Display a Help window."""
@@ -739,7 +744,8 @@ class ShellFrameMixin:
         
         text = wx.py.shell.HELP_TEXT
 
-        dlg = wx.lib.dialogs.ScrolledMessageDialog(self, text, title, size = ((700, 540)))
+        dlg = wx.lib.dialogs.ScrolledMessageDialog(self, text, title,
+                                                   size = ((700, 540)))
         fnt = wx.Font(10, wx.TELETYPE, wx.NORMAL, wx.NORMAL)
         dlg.GetChildren()[0].SetFont(fnt)
         dlg.GetChildren()[0].SetInsertionPoint(0)
@@ -749,13 +755,19 @@ class ShellFrameMixin:
 
     def LoadSettings(self):
         if self.config is not None:
-            self.autoSaveSettings = self.config.ReadBool('Options/AutoSaveSettings', False)
-            self.execStartupScript = self.config.ReadBool('Options/ExecStartupScript', True)
-            self.autoSaveHistory  = self.config.ReadBool('Options/AutoSaveHistory', False)
+            self.autoSaveSettings = \
+                 self.config.ReadBool('Options/AutoSaveSettings', False)
+            self.execStartupScript = \
+                 self.config.ReadBool('Options/ExecStartupScript', True)
+            self.autoSaveHistory = \
+                 self.config.ReadBool('Options/AutoSaveHistory', False)
             
-            self.showPySlicesTutorial = self.config.ReadBool('Options/ShowPySlicesTutorial', True)
-            self.enableShellMode = self.config.ReadBool('Options/EnableShellMode', False)
-            self.hideFoldingMargin = self.config.ReadBool('Options/HideFoldingMargin', False)
+            self.showPySlicesTutorial = \
+                 self.config.ReadBool('Options/ShowPySlicesTutorial', True)
+            self.enableShellMode = \
+                 self.config.ReadBool('Options/EnableShellMode', False)
+            self.hideFoldingMargin = \
+                 self.config.ReadBool('Options/HideFoldingMargin', True)
             
             self.LoadHistory()
 
@@ -763,15 +775,20 @@ class ShellFrameMixin:
     def SaveSettings(self,force):
         if self.config is not None:
             # always save these
-            self.config.WriteBool('Options/AutoSaveSettings', self.autoSaveSettings)
+            self.config.WriteBool('Options/AutoSaveSettings',
+                                  self.autoSaveSettings)
             
             if self.autoSaveSettings or force:
-                self.config.WriteBool('Options/AutoSaveHistory', self.autoSaveHistory)
-                self.config.WriteBool('Options/ExecStartupScript', self.execStartupScript)
-                
-                self.config.WriteBool('Options/ShowPySlicesTutorial', self.showPySlicesTutorial)
-                self.config.WriteBool('Options/EnableShellMode', self.enableShellMode)
-                self.config.WriteBool('Options/HideFoldingMargin', self.hideFoldingMargin)
+                self.config.WriteBool('Options/AutoSaveHistory',
+                                      self.autoSaveHistory)
+                self.config.WriteBool('Options/ExecStartupScript',
+                                      self.execStartupScript)
+                self.config.WriteBool('Options/ShowPySlicesTutorial',
+                                      self.showPySlicesTutorial)
+                self.config.WriteBool('Options/EnableShellMode',
+                                      self.enableShellMode)
+                self.config.WriteBool('Options/HideFoldingMargin',
+                                      self.hideFoldingMargin)
             if self.autoSaveHistory:
                 self.SaveHistory()
 
@@ -807,7 +824,8 @@ class ShellFrameMixin:
                     hist = f.read()
                     f.close()
                     self.shell.history = hist.split('\x00\n')
-                    dispatcher.send(signal="Shell.loadHistory", history=self.shell.history)
+                    dispatcher.send(signal="Shell.loadHistory",
+                                    history=self.shell.history)
                 except:
                     d = wx.MessageDialog(self, "Error loading history file.",
                                          "Error", wx.ICON_EXCLAMATION)
@@ -834,7 +852,9 @@ class ShellFrameMixin:
         text = self.shell.GetText()
 
 ## This isn't working currently...
-##         d = wx.MessageDialog(self,u'Save source code only?\nAnswering yes will only save lines starting with >>> and ...',u'Question', wx.YES_NO | wx.ICON_QUESTION)
+##         d = wx.MessageDialog(self,u'Save source code only?\n' + \
+##              'Answering yes will only save lines starting with >>> and ...',
+##            u'Question', wx.YES_NO | wx.ICON_QUESTION)
 ##         yes_no = d.ShowModal()
 ##         if yes_no == wx.ID_YES:
 ##             m = re.findall('^[>\.]{3,3} (.*)\r', text, re.MULTILINE | re.LOCALE)

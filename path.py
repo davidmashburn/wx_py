@@ -21,4 +21,4 @@ def ls(str='*',fullpath=False):
         for i in g:
             print os.path.split(i)[1]
 
-cd('~',usePrint=False)
+#cd('~',usePrint=False)

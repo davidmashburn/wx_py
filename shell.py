@@ -506,13 +506,16 @@ class Shell(editwindow.EditWindow):
                     li += 1
                 endP = self.GetLineEndPosition(li-1)
                 self.ShowLines(li0, li-1)
-                self.SetSelection( startP, endP ) # select reappearing text to allow "hide again"
+                # select reappearing text to allow "hide again"
+                self.SetSelection( startP, endP )
                 return
             startP,endP = self.GetSelection()
             endP-=1
-            startL,endL = self.LineFromPosition(startP), self.LineFromPosition(endP)
+            startL = self.LineFromPosition(startP)
+            endL = self.LineFromPosition(endP)
 
-            if endL == self.LineFromPosition(self.promptPosEnd): # never hide last prompt
+            # never hide last prompt
+            if endL == self.LineFromPosition(self.promptPosEnd):
                 endL -= 1
 
             m = self.MarkerGet(startL)
@@ -523,7 +526,9 @@ class Shell(editwindow.EditWindow):
         if key == wx.WXK_F12: #seb
             if self.noteMode:
                 # self.promptPosStart not used anyway - or ? 
-                self.promptPosEnd = self.PositionFromLine( self.GetLineCount()-1 ) + len(str(sys.ps1))
+                self.promptPosEnd = \
+                   self.PositionFromLine( self.GetLineCount()-1 ) + \
+                   len(str(sys.ps1))
                 self.GotoLine(self.GetLineCount())
                 self.GotoPos(self.promptPosEnd)
                 self.prompt()  #make sure we have a prompt
@@ -543,7 +548,8 @@ class Shell(editwindow.EditWindow):
 
         # Return (Enter) is used to submit a command to the
         # interpreter.
-        if (not controlDown and not shiftDown and not altDown) and key in [wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER]:
+        if (not controlDown and not shiftDown and not altDown) and \
+           key in [wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER]:
             if self.CallTipActive():
                 self.CallTipCancel()
             self.processLine()
@@ -1024,19 +1030,29 @@ class Shell(editwindow.EditWindow):
             # Keep the undo feature from undoing previous responses.
             self.EmptyUndoBuffer()
         
-        #DNM
-        # Autoindent magic
-        # Match the indent of the line above
-        # UNLESS the line above ends in a colon...then add four spaces
         if self.more:
             line_num=self.GetCurrentLine()
+            currentLine=self.GetLine(line_num)
             previousLine=self.GetLine(line_num-1)[len(prompt):]
-            strip=previousLine.strip()
-            if len(strip)==0:
-                indent=previousLine.strip('\n').strip('\r') # because it is all whitespace!
+            pstrip=previousLine.strip()
+            
+            # Get the first alnum word:
+            first_word=[]
+            for i in pstrip:
+                if i.isalnum():
+                    first_word.append(i)
+                else:
+                    break
+            first_word = ''.join(first_word)
+            
+            if pstrip == '':
+                # because it is all whitespace!
+                indent=previousLine.strip('\n').strip('\r')
             else:
-                indent=previousLine[:(previousLine.find(previousLine.strip()[0]))]
-                if strip[-1]==':':
+                indent=previousLine[:(len(previousLine)-len(pstrip)-1)]
+                if pstrip[-1]==':' and \
+                   first_word in ['if','else','elif','for','while',
+                                  'def','class','try','except','finally']:
                     indent+=' '*4
             
             self.write(indent)
@@ -1200,7 +1216,8 @@ class Shell(editwindow.EditWindow):
                 if ctindex != -1 and not self.CallTipActive():
                     #insert calltip, if current pos is '(', otherwise show it only
                     self.autoCallTipShow(ctips[:ctindex + 1], 
-                        self.GetCharAt(currpos - 1) == ord('(') and self.GetCurrentPos() == self.GetTextLength(),
+                        self.GetCharAt(currpos - 1) == ord('(') and \
+                           self.GetCurrentPos() == self.GetTextLength(),
                         True)
                 
 
@@ -1401,10 +1418,14 @@ class Shell(editwindow.EditWindow):
 
 
     def LoadSettings(self, config):
-        self.autoComplete              = config.ReadBool('Options/AutoComplete', True)
-        self.autoCompleteIncludeMagic  = config.ReadBool('Options/AutoCompleteIncludeMagic', True)
-        self.autoCompleteIncludeSingle = config.ReadBool('Options/AutoCompleteIncludeSingle', True)
-        self.autoCompleteIncludeDouble = config.ReadBool('Options/AutoCompleteIncludeDouble', True)
+        self.autoComplete              = \
+            config.ReadBool('Options/AutoComplete', True)
+        self.autoCompleteIncludeMagic  = \
+            config.ReadBool('Options/AutoCompleteIncludeMagic', True)
+        self.autoCompleteIncludeSingle = \
+            config.ReadBool('Options/AutoCompleteIncludeSingle', True)
+        self.autoCompleteIncludeDouble = \
+            config.ReadBool('Options/AutoCompleteIncludeDouble', True)
 
         self.autoCallTip = config.ReadBool('Options/AutoCallTip', True)
         self.callTipInsert = config.ReadBool('Options/CallTipInsert', True)
@@ -1419,9 +1440,12 @@ class Shell(editwindow.EditWindow):
     
     def SaveSettings(self, config):
         config.WriteBool('Options/AutoComplete', self.autoComplete)
-        config.WriteBool('Options/AutoCompleteIncludeMagic', self.autoCompleteIncludeMagic)
-        config.WriteBool('Options/AutoCompleteIncludeSingle', self.autoCompleteIncludeSingle)
-        config.WriteBool('Options/AutoCompleteIncludeDouble', self.autoCompleteIncludeDouble)
+        config.WriteBool('Options/AutoCompleteIncludeMagic',
+                         self.autoCompleteIncludeMagic)
+        config.WriteBool('Options/AutoCompleteIncludeSingle',
+                         self.autoCompleteIncludeSingle)
+        config.WriteBool('Options/AutoCompleteIncludeDouble',
+                         self.autoCompleteIncludeDouble)
         config.WriteBool('Options/AutoCallTip', self.autoCallTip)
         config.WriteBool('Options/CallTipInsert', self.callTipInsert)
         config.WriteBool('View/WrapMode', self.GetWrapMode())
@@ -1472,7 +1496,7 @@ class Shell(editwindow.EditWindow):
 
 
 
-## NOTE: The DnD of file names is disabled until I can figure out how
+## NOTE: The DnD of file names is disabled until we can figure out how
 ## best to still allow DnD of text.
 
 

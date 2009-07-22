@@ -1,3 +1,13 @@
+0.9.7.6 (7/18/2009)
+-------------------
+Made output have a slight-blue background
+Added a tutorial that can be disabled in Options->Startup.
+Added "Shell Mode" which uses >>> and ... markers for input slices and uses two returns for command execution
+Changed manual completion keybindings.
+Cleaned up keybinding help.
+Made Items in Options->Startup menu automatically save to the config file (since they don't affect anything until startup)
+Major code cleanup, removal of much dead code, shortening of very long lines, etc...
+
 0.9.6.9 (7/9/2009)
 -------------------
 Fixed Undo marker issues and a bug in selection overwrite.
