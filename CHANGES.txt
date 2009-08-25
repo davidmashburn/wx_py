@@ -1,3 +1,9 @@
+0.9.7.7 (8/10/2009) (Current)
+-------------------
+Added code to introspect.py to check for Enthought's "Traits" attributes.
+Added PySlicesShell.py.  PySlices shell is PySlices without Filling
+  and other crust attributes.
+
 0.9.7.6 (7/18/2009)
 -------------------
 Made output have a slight-blue background

@@ -32,7 +32,7 @@ from path import ls,cd,pwd
 sys.ps3 = '<-- '  # Input prompt.
 USE_MAGIC=True
 
-NAVKEYS = (wx.WXK_END, wx.WXK_LEFT, wx.WXK_RIGHT,
+NAVKEYS = (wx.WXK_HOME, wx.WXK_END, wx.WXK_LEFT, wx.WXK_RIGHT,
            wx.WXK_UP, wx.WXK_DOWN, wx.WXK_PRIOR, wx.WXK_NEXT)
 
 GROUPING_SELECTING=0
@@ -74,6 +74,11 @@ IO_ANY_START_MASK = ( 1<<INPUT_START | 1<<OUTPUT_START |
                       1<<INPUT_START_FOLDED | 1<<OUTPUT_START_FOLDED )
 IO_MIDDLE_MASK = ( 1<<INPUT_MIDDLE | 1<<OUTPUT_MIDDLE )
 IO_END_MASK = ( 1<<INPUT_END | 1<<OUTPUT_END )
+
+pyslicesFormatHeaderText = '#PySlices Save Format Version 1.0 (PySlices v0.9.7.7 and later)\n'
+groupingStartText = '#PySlices Marker Information -- Begin Grouping Slice\n'
+inputStartText = '#PySlices Marker Information -- Begin Input Slice\n'
+outputStartText = '#PySlices Marker Information -- Begin Output Slice\n'
 
 tutorialText = """
 
@@ -130,7 +135,7 @@ class ShellFrame(frame.Frame, frame.ShellFrameMixin):
                  config=None, dataDir=None,
                  *args, **kwds):
         """Create ShellFrame instance."""
-        frame.Frame.__init__(self, parent, id, title, pos, size, style)
+        frame.Frame.__init__(self, parent, id, title, pos, size, style,shellName='PySlices')
         frame.ShellFrameMixin.__init__(self, config, dataDir)
         
         if size == wx.DefaultSize:
@@ -197,7 +202,7 @@ class ShellFrame(frame.Frame, frame.ShellFrameMixin):
 
     def SaveSettings(self, force=False):
         if self.config is not None:
-            frame.ShellFrameMixin.SaveSettings(self)
+            frame.ShellFrameMixin.SaveSettings(self,force)
             if self.autoSaveSettings or force:
                 frame.Frame.SaveSettings(self, self.config)
                 self.shell.SaveSettings(self.config)
@@ -206,7 +211,16 @@ class ShellFrame(frame.Frame, frame.ShellFrameMixin):
         if self.config is not None:
             self.SaveSettings(force=True)
             self.config.Flush()
-        
+    
+    def OnEnableShellMode(self,event):
+        """Change between Slices Mode and Shell Mode"""
+        frame.Frame.OnEnableShellMode(self,event)
+        self.shell.ToggleShellMode(self.enableShellMode)
+    
+    def OnHideFoldingMargin(self,event):
+        """Change between Slices Mode and Shell Mode"""
+        frame.Frame.OnHideFoldingMargin(self,event)
+        self.shell.ToggleFoldingMargin(self.hideFoldingMargin)
 
 
 # TODO : Update the help text
@@ -752,18 +766,30 @@ class Shell(editwindow.EditWindow):
                     break
             first_word = ''.join(first_word)
             
-            if line.strip() != '' and lstrip == line and \
-               first_word not in ['else','elif','except','finally']:
+            # check to see if the previous command had a continuation line
+            # won't be able to distinguish commented \'s though...
+            continuation=False
+            if command.strip()!='':
+                if command.strip()[-1]=='\\':
+                    continuation=True
+            
+            # Continue the command if it is blank, has indentation,
+            # starts with else, elif,except, or finally
+            # or previous line had a line continuation \
+            if line.strip() == '' or lstrip != line or \
+               first_word in ['else','elif','except','finally'] or \
+               continuation:
+                # Multiline command. Add to the command.
+                command += '\n'
+                command += line
+            else:
                 # New command.
                 if command:
                     # Add the previous command to the list.
                     commands.append(command)
                 # Start a new command, which may be multiline.
                 command = line
-            else:
-                # Multiline command. Add to the command.
-                command += '\n'
-                command += line
+        
         commands.append(command)
         
         return commands
@@ -1074,8 +1100,8 @@ class Shell(editwindow.EditWindow):
         return start,end
     
     def MergeAdjacentSlices(self):
-        """This function merges all adjacent selected slices.
-Right now, only IO Merging is allowed."""
+        """This function merges all adjacent selected slices.\n""" + \
+        """Right now, only IO Merging is allowed."""
         started=False
         start=0
         end=self.GetLineCount()-1
@@ -1570,14 +1596,46 @@ Right now, only IO Merging is allowed."""
             pass
         
         # Don't allow line deletion.
-        elif controlDown and key in (ord('L'), ord('l')):
+        #elif controlDown and key in (ord('L'), ord('l')):
             # TODO : Allow line deletion eventually ??
             #event.Skip()
-            pass
+        #    pass
         
         # Don't allow line transposition.
+        # Toggle Shell Mode / Slices Mode
         elif controlDown and key in (ord('T'), ord('t')):
             self.ToggleShellMode()
+        
+        # Save to out.txt
+        elif controlDown and key in (ord('K'), ord('k')):
+            print 'Save it'
+            file=wx.SaveFileSelector("Save PySlices File",".pyslices")
+            if file!=u'':
+                if file[-9:]!=".pyslices":
+                    file+=".pyslices"
+                fid=open(file,'w')
+                self.SavePySlicesFile(fid)
+                fid.close()
+        
+        #FIXME!
+        elif controlDown and shiftDown and key in (ord('B'), ord('b')):
+            print 'Load it'
+            file=wx.FileSelector("Load a PySlices File",wildcard='*.pyslices')
+            if file!=u'':
+                fid=open(file,'r')
+                self.LoadPySlicesFile(fid)
+                fid.close()
+        # Load from out.txt
+        elif controlDown and key in (ord('L'), ord('l')):
+            print 'Load it'
+            #fid=open('/home/mashbudn/out.txt','r')
+            #self.LoadPySlicesFile(fid)
+            #fid.close()
+            file=wx.FileSelector("Load File As New Slice")
+            if file!=u'':
+                fid=open(file,'r')
+                self.LoadPyFileAsSlice(fid)
+                fid.close()
         
         elif controlDown and key in (ord('D'), ord('d')):
             #Disallow line duplication in favor of divide slices
@@ -2178,14 +2236,11 @@ Right now, only IO Merging is allowed."""
             self.MarkerDelete(line_num,start_folded)
             self.MarkerDelete(line_num,middle)
             self.MarkerDelete(line_num,end)
-            if start==OUTPUT_START: self.MarkerDelete(line_num,OUTPUT_BG)
         elif marker & 1<<start_folded:
             self.MarkerDelete(line_num,middle)
             self.MarkerDelete(line_num,end)
-            if start==OUTPUT_START: self.MarkerDelete(line_num,OUTPUT_BG)
         elif marker & 1<<middle:
             self.MarkerDelete(line_num,end)
-            if start==OUTPUT_START: self.MarkerDelete(line_num,OUTPUT_BG)
         elif marker & 1<<end:
             pass
         
@@ -2209,10 +2264,10 @@ Right now, only IO Merging is allowed."""
             self.MarkerAdd(0,INPUT_START_FOLDED)
         elif first_marker & 1<<OUTPUT_START :
             self.MarkerAdd(0,OUTPUT_START)
-            self.MarkerAdd(0,OUTPUT_BG)
+            #self.MarkerAdd(0,OUTPUT_BG) # More harm than good??
         elif first_marker & 1<<OUTPUT_START_FOLDED :
             self.MarkerAdd(0,OUTPUT_START_FOLDED)
-            self.MarkerAdd(0,OUTPUT_BG)
+            #self.MarkerAdd(0,OUTPUT_BG) # More harm than good??
         else:
             self.MarkerAdd(0,INPUT_START)
         
@@ -3078,8 +3133,6 @@ Right now, only IO Merging is allowed."""
         may be positive to magnify or negative to reduce."""
         self.SetZoom(points)
 
-
-
     def LoadSettings(self, config):
         self.autoComplete = \
                     config.ReadBool('Options/AutoComplete', True)
@@ -3159,6 +3212,146 @@ Right now, only IO Merging is allowed."""
             evt.Enable(self.CanUndo())
         elif id == wx.ID_REDO:
             evt.Enable(self.CanRedo())
+
+    def LoadPySlicesFile(self,fid):
+        invalidFileString = 'Not a valid input format'
+        lineCount=0
+        groupingStartLines=[0]
+        ioStartLines=[0]
+        ioStartTypes=[]
+        
+        # Read the initial three lines that have version and marker information
+        line=fid.readline()
+        if line != pyslicesFormatHeaderText:  print invalidFileString ; return
+        line=fid.readline()
+        if line != groupingStartText:  print invalidFileString ; return
+        line=fid.readline()
+        if line == inputStartText:      ioStartTypes.append('input')
+        elif line == outputStartText:   ioStartTypes.append('output')
+        else:  print invalidFileString ; return
+        
+        self.ClearAll()
+        
+        # Write the file's text to the text area
+        # Capture Marker information to
+        for i in fid:
+            if i==groupingStartText:
+                groupingStartLines.append(lineCount)
+            elif i==inputStartText:
+                ioStartLines.append(lineCount)
+                ioStartTypes.append('input')
+            elif i==outputStartText:
+                ioStartLines.append(lineCount)
+                ioStartTypes.append('output')
+            else:
+                self.write(i,'Input')
+                lineCount+=1
+        
+        print groupingStartLines
+        print ioStartLines
+        print ioStartTypes
+        for i in range(lineCount+1):
+            self.clearGroupingMarkers(i)
+            self.clearIOMarkers(i)
+            
+            doMiddle=False
+            doEnd=False
+            if groupingStartLines!=[]:
+                if i == groupingStartLines[0]:
+                    self.MarkerAdd(i,GROUPING_START)
+                    del groupingStartLines[0]
+                elif i+1 == groupingStartLines[0]:
+                    doEnd=True
+                else:
+                    doMiddle=True
+            elif i==lineCount-1:
+                doEnd=True
+            else:
+                doMiddle=True
+            
+            if doMiddle:
+                self.MarkerAdd(i,GROUPING_MIDDLE)
+            elif doEnd:
+                self.MarkerAdd(i,GROUPING_END)
+            
+            doMiddle=False
+            doEnd=False
+            if ioStartLines!=[]:
+                if i == ioStartLines[0]:
+                    # Delete the old ioStartTypes (keep the current copy for later use)
+                    if i>0: del ioStartTypes[0]
+                    
+                    if ioStartTypes[0]=='input':
+                        self.MarkerAdd(i,INPUT_START)
+                    elif ioStartTypes[0]=='output':
+                        self.MarkerAdd(i,OUTPUT_START)
+                        self.MarkerAdd(i,OUTPUT_BG)
+                    else:
+                        print 'Invalid Type!'; return
+                    
+                    # Only delete markers we are totally finished with...
+                    # Keep one more "StartTypes" than "StartLines"
+                    del ioStartLines[0]
+                elif i+1 == ioStartLines[0]:
+                    doEnd=True
+                else:
+                    doMiddle=True
+            elif i==lineCount-1:
+                doEnd=True
+            else:
+                doMiddle=True
+            
+            if doMiddle:
+                if ioStartTypes[0]=='input':
+                    self.MarkerAdd(i,INPUT_MIDDLE)
+                elif ioStartTypes[0]=='output':
+                    self.MarkerAdd(i,OUTPUT_MIDDLE)
+                    self.MarkerAdd(i,OUTPUT_BG)
+                else:
+                    print 'Invalid Type!'; return
+            elif doEnd:
+                if ioStartTypes[0]=='input':
+                    self.MarkerAdd(i,INPUT_END)
+                elif ioStartTypes[0]=='output':
+                    self.MarkerAdd(i,OUTPUT_END)
+                    self.MarkerAdd(i,OUTPUT_BG)
+                else:
+                    print 'Invalid Type!'; return
+            
+        
+        self.EmptyUndoBuffer() # maybe not?
+    
+    def SavePySlicesFile(self,fid):
+        fid.write(pyslicesFormatHeaderText)
+        for i in range(self.GetLineCount()):
+            markers=self.MarkerGet(i)
+            if markers & ( 1<<GROUPING_START | 1<<GROUPING_START_FOLDED ):
+                fid.write(groupingStartText)
+            if markers & ( 1<<INPUT_START | 1<<INPUT_START_FOLDED ):
+                fid.write(inputStartText)
+            if markers & ( 1<<OUTPUT_START | 1<<OUTPUT_START_FOLDED ):
+                fid.write(outputStartText)
+            fid.write(self.GetLine(i))
+    
+    # FIX ME!!
+    def LoadPyFileAsSlice(self,fid):
+        curpos=self.GetCurrentPos()
+        start,end = self.GetGroupingSlice()
+        
+        endpos=self.GetLineEndPosition(end)
+        self.SetCurrentPos(endpos)
+        self.SetSelection(endpos, endpos)
+        
+        text='\n'+fid.read()
+        self.write(text,'Input')
+        newpos=self.GetCurrentPos()
+        
+        self.SetCurrentPos(curpos)
+        self.SetSelection(curpos,curpos)
+        self.SplitSlice()
+        #self.SetCurrentPos(newpos)
+        #self.SetSelection(newpos,newpos)
+        
         
 ## NOTE: The DnD of file names is disabled until we can figure out how
 ## best to still allow DnD of text.
