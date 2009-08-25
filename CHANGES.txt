@@ -1,8 +1,9 @@
-0.9.7.7 (8/10/2009) (Current)
+0.9.7.7 (8/25/2009) (Current--Still Need to SVNAdd the new file PySlicesShell.py)
 -------------------
 Added code to introspect.py to check for Enthought's "Traits" attributes.
 Added PySlicesShell.py.  PySlices shell is PySlices without Filling
   and other crust attributes.
+Fixed a bug with Output_BG
 
 0.9.7.6 (7/18/2009)
 -------------------

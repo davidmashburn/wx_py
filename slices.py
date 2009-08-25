@@ -2251,14 +2251,14 @@ class Shell(editwindow.EditWindow):
         self.clearGroupingMarkers(0)
         self.clearIOMarkers(0)
         
-        if first_marker & 1<<GROUPING_START :            
+        if first_marker & 1<<GROUPING_START :
             self.MarkerAdd(0,GROUPING_START)
         elif first_marker & 1<<GROUPING_START_FOLDED :
             self.MarkerAdd(0,GROUPING_START_FOLDED)
         else:
             self.MarkerAdd(0,GROUPING_START)
         
-        if first_marker & 1<<INPUT_START :            
+        if first_marker & 1<<INPUT_START :
             self.MarkerAdd(0,INPUT_START)
         elif first_marker & 1<<INPUT_START_FOLDED :
             self.MarkerAdd(0,INPUT_START_FOLDED)
