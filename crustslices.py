@@ -489,7 +489,7 @@ class CrustSlicesFrame(frame.Frame, frame.ShellFrameMixin):
             if cancel:
                 return cancel
         
-        file=wx.FileSelector("Load File As New Slice")
+        file=wx.FileSelector('Load File As New Slice',wildcard='*.pyslices')
         if file!=u'':
             fid=open(file,'r')
             self.shell.LoadPySlicesFile(fid)
