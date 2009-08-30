@@ -6,6 +6,7 @@ __revision__ = "$Revision: 24541 $"[11:-2]
 
 import buffer
 import crust
+import crustslices
 import dispatcher
 import document
 import editor

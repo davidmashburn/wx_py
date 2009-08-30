@@ -75,7 +75,7 @@ IO_ANY_START_MASK = ( 1<<INPUT_START | 1<<OUTPUT_START |
 IO_MIDDLE_MASK = ( 1<<INPUT_MIDDLE | 1<<OUTPUT_MIDDLE )
 IO_END_MASK = ( 1<<INPUT_END | 1<<OUTPUT_END )
 
-pyslicesFormatHeaderText = '#PySlices Save Format Version 1.0 (PySlices v0.9.7.7 and later)\n'
+pyslicesFormatHeaderText = '#PySlices Save Format Version 1.1 (PySlices v0.9.7.8 and later)\n'
 groupingStartText = '#PySlices Marker Information -- Begin Grouping Slice\n'
 inputStartText = '#PySlices Marker Information -- Begin Input Slice\n'
 outputStartText = '#PySlices Marker Information -- Begin Output Slice\n'
@@ -166,6 +166,7 @@ class ShellFrame(frame.Frame, frame.ShellFrameMixin):
             if event.CanVeto():
                 event.Veto(True)
         else:
+            # TODO: Add check for saving
             self.SaveSettings()
             self.shell.destroy()
             self.Destroy()
@@ -393,7 +394,11 @@ class Shell(editwindow.EditWindow):
 
         # Set up the buffer.
         self.buffer = Buffer()
-
+        self.id = self.GetId()
+        self.buffer.addEditor(self)
+        self.buffer.name='This shell'
+        self.NeedsCheckForSave=False
+        
         # Find out for which keycodes the interpreter will autocomplete.
         self.autoCompleteKeys = self.interp.getAutoCompleteKeys()
 
@@ -1606,31 +1611,9 @@ class Shell(editwindow.EditWindow):
         elif controlDown and key in (ord('T'), ord('t')):
             self.ToggleShellMode()
         
-        # Save to out.txt
-        elif controlDown and key in (ord('K'), ord('k')):
-            print 'Save it'
-            file=wx.SaveFileSelector("Save PySlices File",".pyslices")
-            if file!=u'':
-                if file[-9:]!=".pyslices":
-                    file+=".pyslices"
-                fid=open(file,'w')
-                self.SavePySlicesFile(fid)
-                fid.close()
-        
-        #FIXME!
-        elif controlDown and shiftDown and key in (ord('B'), ord('b')):
-            print 'Load it'
-            file=wx.FileSelector("Load a PySlices File",wildcard='*.pyslices')
-            if file!=u'':
-                fid=open(file,'r')
-                self.LoadPySlicesFile(fid)
-                fid.close()
-        # Load from out.txt
+        #Open and Save now work when using CrustSlicesFrames
         elif controlDown and key in (ord('L'), ord('l')):
             print 'Load it'
-            #fid=open('/home/mashbudn/out.txt','r')
-            #self.LoadPySlicesFile(fid)
-            #fid.close()
             file=wx.FileSelector("Load File As New Slice")
             if file!=u'':
                 fid=open(file,'r')
@@ -2060,6 +2043,7 @@ class Shell(editwindow.EditWindow):
             self.SetCurrentPos(new_pos)
         
         self.EmptyUndoBuffer()
+        self.NeedsCheckForSave=True
     
     # Not Used!!
     def getMultilineCommand(self, rstrip=True):
@@ -2353,7 +2337,7 @@ class Shell(editwindow.EditWindow):
                 pass # FIX MARKER!!
             # FIX ME
     
-    def write(self, text,type='Input'):
+    def write(self, text,type='Input',silent=False):
         """Display text in the shell.
 
         Replace line endings with OS-specific endings."""
@@ -2386,24 +2370,26 @@ class Shell(editwindow.EditWindow):
             next_line_num=end_line_num+1
         
         if type=='Input':
-            start=INPUT_START
-            start_folded=INPUT_START_FOLDED
-            middle=INPUT_MIDDLE
-            end=INPUT_END
-            opposite_start=OUTPUT_START
-            opposite_start_folded=OUTPUT_START_FOLDED
-            opposite_middle=OUTPUT_MIDDLE # To test for bad writes...
-            opposite_end=OUTPUT_END # To test for bad writes...
+            start = INPUT_START
+            start_folded = INPUT_START_FOLDED
+            middle = INPUT_MIDDLE
+            end = INPUT_END
+            # preparation for more io types...
+            opposite_start_mask = 1<<OUTPUT_START
+            opposite_start_folded_mask = 1<<OUTPUT_START_FOLDED
+            opposite_middle_mask = 1<<OUTPUT_MIDDLE # To test for bad writes...
+            opposite_end_mask = 1<<OUTPUT_END # To test for bad writes...
         elif type in ['Output','Error']:
             #self.MarkerAdd(start_line_num,GROUPING_START_FOLDED)
             start=OUTPUT_START
             start_folded=OUTPUT_START_FOLDED
             middle=OUTPUT_MIDDLE
             end=OUTPUT_END
-            opposite_start=INPUT_START
-            opposite_start_folded=INPUT_START_FOLDED
-            opposite_middle=INPUT_MIDDLE # To test for bad writes...
-            opposite_end=INPUT_END # To test for bad writes...
+            # preparation for more io types...
+            opposite_start_mask = 1<<INPUT_START
+            opposite_start_folded_mask = 1<<INPUT_START_FOLDED
+            opposite_middle_mask = 1<<INPUT_MIDDLE # To test for bad writes...
+            opposite_end_mask = 1<<INPUT_END # To test for bad writes...
         
         if num_new_lines>0: #Do nothing if typing within a line...
             # Update the Grouping Markers
@@ -2425,7 +2411,7 @@ class Shell(editwindow.EditWindow):
                 if type=='Output': self.MarkerAdd(start_line_num,OUTPUT_BG)
             else:
                 previous_marker=self.MarkerGet(previous_line_num)
-                if previous_marker & 1<<opposite_middle:
+                if previous_marker & opposite_middle_mask:
                     badMarkers=True
             
             if next_line_num==None:
@@ -2437,7 +2423,7 @@ class Shell(editwindow.EditWindow):
             else:
                 next_marker=self.MarkerGet(next_line_num)
                 fixEndMarkers=True
-                if next_marker & ( 1<<opposite_middle | 1<<opposite_end ):
+                if next_marker & ( opposite_middle_mask | opposite_end_mask ):
                     badMarkers=True
             
             if not badMarkers:
@@ -2450,7 +2436,7 @@ class Shell(editwindow.EditWindow):
                     blank=blank or self.ensureSingleIOMarker(previous_line_num)
                     
                     if blank:
-                        if type=='Input': print 'BLANK LINE!' # BAD CASE
+                        if type=='Input' and not silent: print 'BLANK LINE!' # BAD CASE
                     
                     if previous_marker & 1<<GROUPING_END :
                         # Make GROUPING slice continue unless we hit
@@ -2466,15 +2452,16 @@ class Shell(editwindow.EditWindow):
                         self.MarkerDelete(previous_line_num,end)
                         self.MarkerAdd(previous_line_num,middle) # ONLY CHANGING CASE
                         if type=='Output': self.MarkerAdd(previous_line_num,OUTPUT_BG)
-                    elif previous_marker & 1<<opposite_middle :
+                    elif previous_marker & opposite_middle_mask :
                          # BAD CASE
-                        if type=='Input': print 'Should have been a bad marker!'
+                        if type=='Input' and not silent: print 'Should have been a bad marker!'
                     
                     # We can only add input to an input slice
                     # And can only add output to an output slice
                     
-                    if previous_marker & ( 1<<opposite_start |     \
-                            1<<opposite_start_folded | 1<<opposite_end ):
+                    if previous_marker & ( opposite_start_mask |
+                                           opposite_start_folded_mask |
+                                           opposite_end_mask ):
                         if type=='Input':
                             self.clearGroupingMarkers(start_line_num)
                             self.MarkerAdd(start_line_num,GROUPING_START)
@@ -2512,7 +2499,7 @@ class Shell(editwindow.EditWindow):
                     blank=blank or self.ensureSingleIOMarker(next_line_num)
                     
                     if blank:
-                        if type=='Input': print 'BLANK LINE!' # BAD CASE
+                        if type=='Input' and not silent: print 'BLANK LINE!' # BAD CASE
                     
                     self.clearGroupingMarkers(end_line_num)
                     if fixIOEnd:
@@ -2530,16 +2517,16 @@ class Shell(editwindow.EditWindow):
                         elif next_marker & ( 1<<middle | 1<<end ) :
                             self.MarkerAdd(end_line_num,middle)
                             if type=='Output': self.MarkerAdd(end_line_num,OUTPUT_BG)
-                        elif next_marker & ( 1<<opposite_start |
-                                             1<<opposite_start_folded ):
+                        elif next_marker & ( opposite_start_mask |
+                                             opposite_start_folded_mask ):
                             self.MarkerAdd(end_line_num,end)
                             if type=='Output': self.MarkerAdd(end_line_num,OUTPUT_BG)
                         else:
                             self.MarkerAdd(end_line_num,start_folded)
                             if type=='Output': self.MarkerAdd(end_line_num,OUTPUT_BG)
-                            if type=='Input': print 'BAD MARKERS!'
+                            if type=='Input' and not silent: print 'BAD MARKERS!'
             else:
-                if type=='Input': print 'BAD MARKERS!!!'
+                if type=='Input' and not silent: print 'BAD MARKERS!!!'
         
         self.EnsureCaretVisible()
         
@@ -3219,6 +3206,7 @@ class Shell(editwindow.EditWindow):
         groupingStartLines=[0]
         ioStartLines=[0]
         ioStartTypes=[]
+        removeComment=False
         
         # Read the initial three lines that have version and marker information
         line=fid.readline()
@@ -3226,8 +3214,8 @@ class Shell(editwindow.EditWindow):
         line=fid.readline()
         if line != groupingStartText:  print invalidFileString ; return
         line=fid.readline()
-        if line == inputStartText:      ioStartTypes.append('input')
-        elif line == outputStartText:   ioStartTypes.append('output')
+        if line == inputStartText:      ioStartTypes.append('input');removeComment=False
+        elif line == outputStartText:   ioStartTypes.append('output');removeComment=True
         else:  print invalidFileString ; return
         
         self.ClearAll()
@@ -3240,16 +3228,20 @@ class Shell(editwindow.EditWindow):
             elif i==inputStartText:
                 ioStartLines.append(lineCount)
                 ioStartTypes.append('input')
+                removeComment=False
             elif i==outputStartText:
                 ioStartLines.append(lineCount)
                 ioStartTypes.append('output')
+                removeComment=True
             else:
-                self.write(i,'Input')
+                if removeComment:   w=i[1:].replace(os.linesep,'\n')
+                else:               w=i.replace(os.linesep,'\n')
+                self.write(w,'Input',silent=True)
                 lineCount+=1
         
-        print groupingStartLines
-        print ioStartLines
-        print ioStartTypes
+        if w[-1]=='\n':
+            lineCount+=1
+        
         for i in range(lineCount+1):
             self.clearGroupingMarkers(i)
             self.clearIOMarkers(i)
@@ -3322,16 +3314,20 @@ class Shell(editwindow.EditWindow):
         self.EmptyUndoBuffer() # maybe not?
     
     def SavePySlicesFile(self,fid):
-        fid.write(pyslicesFormatHeaderText)
+        addComment=False
+        fid.write(pyslicesFormatHeaderText.replace('\n',os.linesep))
         for i in range(self.GetLineCount()):
             markers=self.MarkerGet(i)
             if markers & ( 1<<GROUPING_START | 1<<GROUPING_START_FOLDED ):
-                fid.write(groupingStartText)
+                fid.write(groupingStartText.replace('\n',os.linesep))
             if markers & ( 1<<INPUT_START | 1<<INPUT_START_FOLDED ):
-                fid.write(inputStartText)
+                fid.write(inputStartText.replace('\n',os.linesep))
+                addComment=False
             if markers & ( 1<<OUTPUT_START | 1<<OUTPUT_START_FOLDED ):
-                fid.write(outputStartText)
-            fid.write(self.GetLine(i))
+                fid.write(outputStartText.replace('\n',os.linesep))
+                addComment=True
+            if addComment: fid.write('#')
+            fid.write(self.GetLine(i).replace('\n',os.linesep))
     
     # FIX ME!!
     def LoadPyFileAsSlice(self,fid):
@@ -3351,6 +3347,11 @@ class Shell(editwindow.EditWindow):
         self.SplitSlice()
         #self.SetCurrentPos(newpos)
         #self.SetSelection(newpos,newpos)
+    
+    def hasChanged(self):
+        """Return True if contents have changed."""
+        return self.GetModify() or self.NeedsCheckForSave
+        
         
         
 ## NOTE: The DnD of file names is disabled until we can figure out how
