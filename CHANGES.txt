@@ -1,4 +1,4 @@
-0.9.7.8 (8/31/09) (Current--Still Need to SVNAdd the new file PySlicesShell.py)
+0.9.7.8 (9/8/09)
 -------------------
 Added open/save abilities to PySlices (PyCrust remains the same).
   This uses a special format with extension .pyslices.
@@ -11,13 +11,15 @@ Added open/save abilities to PySlices (PyCrust remains the same).
 
 Added the ability to load an entire python file into a new Input slice
     with Ctrl-L
+Added the ability to load pyslices files from the command line.
 
 Split the functionality of crust.py (functioning for both PyCrust and PySlices)
   into crust.py (only PyCrust) and crustslices.py (only for PySlices).
 
 After revising the naming conventions:
   shell.py contains the classes: Shell, ShellFacade, and ShellFrame
-  slices.py also contains its own classes: Shell, ShellFacade, and ShellFrame
+  sliceshell.py contains the classes: SlicesShell, SlicesShellFacade,
+                                      and SlicesShellFrame
   crust.py contains: Crust and CrustFrame
   crustslices.py contains: CrustSlices and CrustSlicesFrame
   PyShell.py and PySlicesShell.py are the respective standalone shell apps

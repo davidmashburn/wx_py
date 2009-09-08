@@ -18,7 +18,7 @@ import editwindow
 import editor
 from filling import Filling
 import frame
-from slices import Shell as Slice_Shell
+from sliceshell import SlicesShell
 from version import VERSION
 
 
@@ -44,11 +44,11 @@ class CrustSlices(wx.SplitterWindow):
         # Turn off the tab-traversal style that is automatically
         # turned on by wx.SplitterWindow.  We do this because on
         # Windows the event for Ctrl-Enter is stolen and used as a
-        # navigation key, but the Shell window uses it to insert lines.
+        # navigation key, but the SlicesShell window uses it to insert lines.
         style = self.GetWindowStyle()
         self.SetWindowStyle(style & ~wx.TAB_TRAVERSAL)
         
-        self.shell = Slice_Shell(parent=self, introText=intro,
+        self.sliceshell = SlicesShell(parent=self, introText=intro,
                                  locals=locals, InterpClass=InterpClass,
                                  startupScript=startupScript,
                                  execStartupScript=execStartupScript,
@@ -57,23 +57,23 @@ class CrustSlices(wx.SplitterWindow):
                                  hideFoldingMargin=hideFoldingMargin,
                                  *args, **kwds)
         
-        self.editor = self.shell
+        self.editor = self.sliceshell
         if rootObject is None:
-            rootObject = self.shell.interp.locals
+            rootObject = self.sliceshell.interp.locals
         self.notebook = wx.Notebook(parent=self, id=-1)
-        self.shell.interp.locals['notebook'] = self.notebook
+        self.sliceshell.interp.locals['notebook'] = self.notebook
         self.filling = Filling(parent=self.notebook,
                                rootObject=rootObject,
                                rootLabel=rootLabel,
                                rootIsNamespace=rootIsNamespace)
         # Add 'filling' to the interpreter's locals.
-        self.shell.interp.locals['filling'] = self.filling
+        self.sliceshell.interp.locals['filling'] = self.filling
         self.notebook.AddPage(page=self.filling, text='Namespace', select=True)
         
         self.display = Display(parent=self.notebook)
         self.notebook.AddPage(page=self.display, text='Display')
         # Add 'pp' (pretty print) to the interpreter's locals.
-        self.shell.interp.locals['pp'] = self.display.setItem
+        self.sliceshell.interp.locals['pp'] = self.display.setItem
         self.display.nbTab = self.notebook.GetPageCount()-1
         
         self.calltip = Calltip(parent=self.notebook)
@@ -88,9 +88,9 @@ class CrustSlices(wx.SplitterWindow):
         
         # Initialize in an unsplit mode, and check later after loading
         # settings if we should split or not.
-        self.shell.Hide()
+        self.sliceshell.Hide()
         self.notebook.Hide()
-        self.Initialize(self.shell)
+        self.Initialize(self.sliceshell)
         self._shouldsplit = True
         wx.CallAfter(self._CheckShouldSplit)
         self.SetMinimumPaneSize(100)
@@ -101,7 +101,7 @@ class CrustSlices(wx.SplitterWindow):
 
     def _CheckShouldSplit(self):
         if self._shouldsplit:
-            self.SplitHorizontally(self.shell, self.notebook, -self.sashoffset)
+            self.SplitHorizontally(self.sliceshell, self.notebook, -self.sashoffset)
             self.lastsashpos = self.GetSashPosition()
         else:
             self.lastsashpos = -1
@@ -112,7 +112,7 @@ class CrustSlices(wx.SplitterWindow):
         if self.issplit:
             self.Unsplit()
         else:
-            self.SplitHorizontally(self.shell, self.notebook, -self.sashoffset)
+            self.SplitHorizontally(self.sliceshell, self.notebook, -self.sashoffset)
             self.lastsashpos = self.GetSashPosition()
         self.issplit = self.IsSplit()
 
@@ -138,7 +138,7 @@ class CrustSlices(wx.SplitterWindow):
 
 
     def LoadSettings(self, config):
-        self.shell.LoadSettings(config)
+        self.sliceshell.LoadSettings(config)
         self.filling.LoadSettings(config)
 
         pos = config.ReadInt('Sash/CrustPos', 400)
@@ -155,7 +155,7 @@ class CrustSlices(wx.SplitterWindow):
             self._shouldsplit = False
 
     def SaveSettings(self, config):
-        self.shell.SaveSettings(config)
+        self.sliceshell.SaveSettings(config)
         self.filling.SaveSettings(config)
 
         if self.lastsashpos != -1:
@@ -206,20 +206,20 @@ class Display(editwindow.EditWindow):
 
 # TODO: Switch this to a editwindow.EditWindow
 class Calltip(wx.TextCtrl):
-    """Text control containing the most recent shell calltip."""
+    """Text control containing the most recent slice shell calltip."""
 
     def __init__(self, parent=None, id=-1):
         style = (wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH2)
         wx.TextCtrl.__init__(self, parent, id, style=style)
         self.SetBackgroundColour(wx.Colour(255, 255, 208))
-        dispatcher.connect(receiver=self.display, signal='Shell.calltip')
+        dispatcher.connect(receiver=self.display, signal='SlicesShell.calltip')
 
         df = self.GetFont()
         font = wx.Font(df.GetPointSize(), wx.TELETYPE, wx.NORMAL, wx.NORMAL)
         self.SetFont(font)
 
     def display(self, calltip):
-        """Receiver for Shell.calltip signal."""
+        """Receiver for SlicesShell.calltip signal."""
         ## self.SetValue(calltip)  # Caused refresh problem on Windows.
         self.Clear()
         self.AppendText(calltip)
@@ -234,11 +234,11 @@ class SessionListing(wx.TextCtrl):
                  wx.TE_RICH2 | wx.TE_DONTWRAP)
         wx.TextCtrl.__init__(self, parent, id, style=style)
         dispatcher.connect(receiver=self.addHistory,
-                           signal="Shell.addHistory")
+                           signal="SlicesShell.addHistory")
         dispatcher.connect(receiver=self.clearHistory,
-                           signal="Shell.clearHistory")
+                           signal="SlicesShell.clearHistory")
         dispatcher.connect(receiver=self.loadHistory,
-                           signal="Shell.loadHistory")
+                           signal="SlicesShell.loadHistory")
 
         df = self.GetFont()
         font = wx.Font(df.GetPointSize(), wx.TELETYPE, wx.NORMAL, wx.NORMAL)
@@ -321,15 +321,15 @@ class CrustSlicesFrame(frame.Frame, frame.ShellFrameMixin):
                                  enableShellMode=self.enableShellMode,
                                  hideFoldingMargin=self.hideFoldingMargin,
                                  *args, **kwds)
-        self.shell = self.crust.shell
-        self.buffer = self.shell.buffer
+        self.sliceshell = self.crust.sliceshell
+        self.buffer = self.sliceshell.buffer
         # Override the filling so that status messages go to the status bar.
         self.crust.filling.tree.setStatusText = self.SetStatusText
         
         # Override the shell so that status messages go to the status bar.
-        self.shell.setStatusText = self.SetStatusText
+        self.sliceshell.setStatusText = self.SetStatusText
         
-        self.shell.SetFocus()
+        self.sliceshell.SetFocus()
         self.LoadSettings()
         
         if filename!=None:
@@ -343,13 +343,13 @@ class CrustSlicesFrame(frame.Frame, frame.ShellFrameMixin):
     
     def OnAbout(self, event):
         """Display an About window."""
-        title = 'About PyCrust'
-        text = 'PyCrust %s\n\n' % VERSION + \
+        title = 'About PySlices'
+        text = 'PySlices %s\n\n' % VERSION + \
                'Yet another Python shell, only flakier.\n\n' + \
                'Half-baked by Patrick K. O\'Brien,\n' + \
                'the other half is still in the oven.\n\n' + \
-               'Shell Revision: %s\n' % self.shell.revision + \
-               'Interpreter Revision: %s\n\n' % self.shell.interp.revision + \
+               'Shell Revision: %s\n' % self.sliceshell.revision + \
+               'Interpreter Revision: %s\n\n' % self.sliceshell.interp.revision + \
                'Platform: %s\n' % sys.platform + \
                'Python Version: %s\n' % sys.version.split()[0] + \
                'wxPython Version: %s\n' % wx.VERSION_STRING + \
@@ -368,17 +368,17 @@ class CrustSlicesFrame(frame.Frame, frame.ShellFrameMixin):
 
     def OnHelp(self, event):
         """Show a help dialog."""
-        frame.ShellFrameMixin.OnHelp(self, event)
+        frame.SlicesShellFrameMixin.OnHelp(self, event)
     
     def OnEnableShellMode(self,event):
         """Change between Slices Mode and Shell Mode"""
         frame.Frame.OnEnableShellMode(self,event)
-        self.shell.ToggleShellMode(self.enableShellMode)
+        self.sliceshell.ToggleShellMode(self.enableShellMode)
     
     def OnHideFoldingMargin(self,event):
         """Change between Slices Mode and Shell Mode"""
         frame.Frame.OnHideFoldingMargin(self,event)
-        self.shell.ToggleFoldingMargin(self.hideFoldingMargin)
+        self.sliceshell.ToggleFoldingMargin(self.hideFoldingMargin)
 
     def LoadSettings(self):
         if self.config is not None:
@@ -435,7 +435,7 @@ class CrustSlicesFrame(frame.Frame, frame.ShellFrameMixin):
                 event.Veto()
                 return cancel
         self.SaveSettings()
-        self.crust.shell.destroy()
+        self.crust.sliceshell.destroy()
         self.bufferDestroy()
         self.Destroy()
         
@@ -496,15 +496,15 @@ class CrustSlicesFrame(frame.Frame, frame.ShellFrameMixin):
             file=wx.FileSelector('Load File As New Slice',wildcard='*.pyslices')
         if file!=None and file!=u'':
             fid=open(file,'r')
-            self.shell.LoadPySlicesFile(fid)
+            self.sliceshell.LoadPySlicesFile(fid)
             fid.close()
             self.SetTitle( os.path.split(file)[1] + ' - PySlices')
-            self.shell.NeedsCheckForSave=False
-            self.shell.SetSavePoint()
+            self.sliceshell.NeedsCheckForSave=False
+            self.sliceshell.SetSavePoint()
             self.buffer.doc = document.Document(file)
             self.buffer.name = self.buffer.doc.filename
             self.buffer.modulename = self.buffer.doc.filebase
-            self.shell.ScrollToLine(0)
+            self.sliceshell.ScrollToLine(0)
         return
     
 ##     def bufferPrint(self):
@@ -528,13 +528,13 @@ class CrustSlicesFrame(frame.Frame, frame.ShellFrameMixin):
         if self.buffer.confirmed:
             try:
                 fid = open(filepath, 'wb')
-                self.shell.SavePySlicesFile(fid)
+                self.sliceshell.SavePySlicesFile(fid)
             finally:
                 if fid:
                     fid.close()
-            self.shell.SetSavePoint()
+            self.sliceshell.SetSavePoint()
             self.SetTitle( os.path.split(filepath)[1] + ' - PySlices')
-            self.shell.NeedsCheckForSave=False
+            self.sliceshell.NeedsCheckForSave=False
     
     def bufferSave(self):
         """Save buffer to its file."""

@@ -8,7 +8,7 @@ import __main__
 original = __main__.__dict__.keys()
 
 __author__ = "Patrick K. O'Brien <pobrien@orbtech.com>"
-__cvsid__ = "$Id: PyShell.py 41078 2006-09-09 00:38:53Z RD $"
+__cvsid__ = "$Id: PySlicesShell.py 41078 2006-09-09 00:38:53Z RD $"
 __revision__ = "$Revision: 41078 $"[11:-2]
 
 import wx
@@ -27,7 +27,7 @@ class App(wx.App):
         import wx
         from wx import py
 
-        self.SetAppName("pyshell")
+        self.SetAppName("pysliceshell")
         confDir = wx.StandardPaths.Get().GetUserDataDir()
         if not os.path.exists(confDir):
             os.mkdir(confDir)
@@ -35,8 +35,9 @@ class App(wx.App):
         self.config = wx.FileConfig(localFilename=fileName)
         self.config.SetRecordDefaults(True)
 
-        self.frame = py.slices.ShellFrame(config=self.config, dataDir=confDir,
-                                          filename=self.filename)
+        self.frame = py.sliceshell.SlicesShellFrame(config=self.config,
+                                                    dataDir=confDir,
+                                                    filename=self.filename)
         self.frame.Show()
         self.SetTopWindow(self.frame)
         return True
