@@ -296,7 +296,7 @@ class CrustSlicesFrame(frame.Frame, frame.ShellFrameMixin):
                  style=wx.DEFAULT_FRAME_STYLE,
                  rootObject=None, rootLabel=None, rootIsNamespace=True,
                  locals=None, InterpClass=None,
-                 config=None, dataDir=None,
+                 config=None, dataDir=None, filename=None,
                  *args, **kwds):
         """Create CrustFrame instance."""
         frame.Frame.__init__(self, parent, id, title, pos, size, style,
@@ -331,6 +331,9 @@ class CrustSlicesFrame(frame.Frame, frame.ShellFrameMixin):
         
         self.shell.SetFocus()
         self.LoadSettings()
+        
+        if filename!=None:
+            self.bufferOpen(filename)
         
         self.Bind(wx.EVT_IDLE, self.OnIdle)
 
@@ -482,15 +485,16 @@ class CrustSlicesFrame(frame.Frame, frame.ShellFrameMixin):
         cancel = False
         return cancel
 
-    def bufferOpen(self):
+    def bufferOpen(self,file=None):
         """Open file in buffer."""
         if self.bufferHasChanged():
             cancel = self.bufferSuggestSave()
             if cancel:
                 return cancel
         
-        file=wx.FileSelector('Load File As New Slice',wildcard='*.pyslices')
-        if file!=u'':
+        if file==None:
+            file=wx.FileSelector('Load File As New Slice',wildcard='*.pyslices')
+        if file!=None and file!=u'':
             fid=open(file,'r')
             self.shell.LoadPySlicesFile(fid)
             fid.close()
@@ -500,6 +504,7 @@ class CrustSlicesFrame(frame.Frame, frame.ShellFrameMixin):
             self.buffer.doc = document.Document(file)
             self.buffer.name = self.buffer.doc.filename
             self.buffer.modulename = self.buffer.doc.filebase
+            self.shell.ScrollToLine(0)
         return
     
 ##     def bufferPrint(self):

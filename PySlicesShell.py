@@ -15,7 +15,12 @@ import wx
 import os
 
 class App(wx.App):
-    """PyShell standalone application."""
+    """PySlicesShell standalone application."""
+
+    def __init__(self, filename=None):
+        self.filename = filename
+        import wx
+        wx.App.__init__(self, redirect=False)
 
     def OnInit(self):
         import os
@@ -30,7 +35,8 @@ class App(wx.App):
         self.config = wx.FileConfig(localFilename=fileName)
         self.config.SetRecordDefaults(True)
 
-        self.frame = py.slices.ShellFrame(config=self.config, dataDir=confDir)
+        self.frame = py.slices.ShellFrame(config=self.config, dataDir=confDir,
+                                          filename=self.filename)
         self.frame.Show()
         self.SetTopWindow(self.frame)
         return True
@@ -45,21 +51,30 @@ pyshell script that wxPython installs:
     main()
 '''
 
-def main():
+def main(filename=None):
     """The main function for the PySlicesShell program."""
     # Cleanup the main namespace, leaving the App class.
+    import sys
+    if not filename and len(sys.argv) > 1:
+        filename = sys.argv[1]
+    if filename:
+        filename = os.path.realpath(filename)
+    
     import __main__
     md = __main__.__dict__
     keepers = original
     keepers.append('App')
+    keepers.append('filename')
     for key in md.keys():
         if key not in keepers:
             del md[key]
     # Create an application instance.
-    app = App(0)
+    app = App(filename=filename)
     # Cleanup the main namespace some more.
     if md.has_key('App') and md['App'] is App:
         del md['App']
+    if md.has_key('filename') and md['filename'] is filename:
+        del md['filename']
     if md.has_key('__main__') and md['__main__'] is __main__:
         del md['__main__']
     # Mimic the contents of the standard Python shell's sys.path.

@@ -20,7 +20,9 @@ import time
 
 from buffer import Buffer
 import dispatcher
+import editor
 import editwindow
+import document
 import frame
 from pseudo import PseudoFileIn
 from pseudo import PseudoFileOut
@@ -28,6 +30,7 @@ from pseudo import PseudoFileErr
 from version import VERSION
 from magic import magic
 from path import ls,cd,pwd
+
 
 sys.ps3 = '<-- '  # Input prompt.
 USE_MAGIC=True
@@ -88,8 +91,8 @@ PySlices is the newest member of the Py suite!
 It is a modified version of PyCrust that supports multi-line commands.
 
 Input and output are contained in "Slices" shown as markers in the left margin.
-Input Slices have red margins (active, editable).
-Output Slices have blue margins (frozen, not editable).
+Input Slices have RED margins (active, editable).
+Output Slices have BLUE margins (frozen, not editable).
 
 Commands in slices can be on more than one line, as with Sage or Mathematica.
 For example, the command:
@@ -115,6 +118,10 @@ If you want a more traditional shell feel, try enabling "Shell Mode" in
 In Shell Mode, two returns in a row executes the command, and
     Ctrl-Return and Shift-Return always print newlines.
 
+Saving and opening "sessions" is now supported!  This is a little
+different to other shells where the history is saved.  With PySlices, 
+the whole document is saved in a simple text format!
+
 To disable this Tutorial on startup, uncheck it in the menu at:
 "Options->Startup->Show PySlices tutorial"
 
@@ -132,7 +139,7 @@ class ShellFrame(frame.Frame, frame.ShellFrameMixin):
                  pos=wx.DefaultPosition, size=wx.DefaultSize,
                  style=wx.DEFAULT_FRAME_STYLE, locals=None,
                  InterpClass=None,
-                 config=None, dataDir=None,
+                 config=None, dataDir=None, filename=None,
                  *args, **kwds):
         """Create ShellFrame instance."""
         frame.Frame.__init__(self, parent, id, title, pos, size, style,shellName='PySlices')
@@ -151,25 +158,32 @@ class ShellFrame(frame.Frame, frame.ShellFrameMixin):
                            enableShellMode=self.enableShellMode,
                            hideFoldingMargin=self.hideFoldingMargin,
                            *args, **kwds)
+        self.buffer = self.shell.buffer
 
         # Override the shell so that status messages go to the status bar.
         self.shell.setStatusText = self.SetStatusText
 
         self.shell.SetFocus()
         self.LoadSettings()
+        
+        if filename!=None:
+            self.bufferOpen(filename)
+        
+        self.Bind(wx.EVT_IDLE, self.OnIdle)
 
 
     def OnClose(self, event):
         """Event handler for closing."""
+        self.bufferClose()
         # This isn't working the way I want, but I'll leave it for now.
-        if self.shell.waiting:
-            if event.CanVeto():
-                event.Veto(True)
-        else:
-            # TODO: Add check for saving
-            self.SaveSettings()
-            self.shell.destroy()
-            self.Destroy()
+        #if self.shell.waiting:
+        #    if event.CanVeto():
+        #        event.Veto(True)
+        #else:
+        #    # TODO: Add check for saving
+        #    self.SaveSettings()
+        #    self.shell.destroy()
+        #    self.Destroy()
 
     def OnAbout(self, event):
         """Display an About window."""
@@ -222,6 +236,200 @@ class ShellFrame(frame.Frame, frame.ShellFrameMixin):
         """Change between Slices Mode and Shell Mode"""
         frame.Frame.OnHideFoldingMargin(self,event)
         self.shell.ToggleFoldingMargin(self.hideFoldingMargin)
+    # Copied Straight from crustslices.py (update both with any changes...)
+    # Stolen Straight from editor.EditorFrame
+    # Modified a little... :)
+    # ||
+    # \/
+    def OnIdle(self, event):
+        """Event handler for idle time."""
+        self._updateTitle()
+        event.Skip()
+    
+    def _updateTitle(self):
+        """Show current title information."""
+        title = self.GetTitle()
+        if self.bufferHasChanged():
+            if title.startswith('* '):
+                pass
+            else:
+                self.SetTitle('* ' + title)
+        else:
+            if title.startswith('* '):
+                self.SetTitle(title[2:])
+    
+    def hasBuffer(self):
+        """Return True if there is a current buffer."""
+        if self.buffer:
+            return True
+        else:
+            return False
+
+    def bufferClose(self):
+        """Close buffer."""
+        if self.buffer.hasChanged():
+            cancel = self.bufferSuggestSave()
+            if cancel and event.CanVeto():
+                event.Veto()
+                return cancel
+        self.SaveSettings()
+        self.shell.destroy()
+        self.bufferDestroy()
+        self.Destroy()
+        
+        return False
+
+    def bufferCreate(self, filename=None):
+        """Create new buffer."""
+        self.bufferDestroy()
+        buffer = Buffer()
+        self.panel = panel = wx.Panel(parent=self, id=-1)
+        panel.Bind (wx.EVT_ERASE_BACKGROUND, lambda x: x)        
+        editor = Editor(parent=panel)
+        panel.editor = editor
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(editor.window, 1, wx.EXPAND)
+        panel.SetSizer(sizer)
+        panel.SetAutoLayout(True)
+        sizer.Layout()
+        buffer.addEditor(editor)
+        buffer.open(filename)
+        self.setEditor(editor)
+        self.editor.setFocus()
+        self.SendSizeEvent()
+        
+
+    def bufferDestroy(self):
+        """Destroy the current buffer."""
+        if self.buffer:
+            self.editor = None
+            self.buffer = None
+
+
+    def bufferHasChanged(self):
+        """Return True if buffer has changed since last save."""
+        if self.buffer:
+            return self.buffer.hasChanged()
+        else:
+            return False
+
+    def bufferNew(self):
+        """Create new buffer."""
+        if self.bufferHasChanged():
+            cancel = self.bufferSuggestSave()
+            if cancel:
+                return cancel
+        self.bufferCreate()
+        cancel = False
+        return cancel
+
+    def bufferOpen(self,file=None):
+        """Open file in buffer."""
+        if self.bufferHasChanged():
+            cancel = self.bufferSuggestSave()
+            if cancel:
+                return cancel
+        
+        if file==None:
+            file=wx.FileSelector('Load File As New Slice',wildcard='*.pyslices')
+        if file!=None and file!=u'':
+            fid=open(file,'r')
+            self.shell.LoadPySlicesFile(fid)
+            fid.close()
+            self.SetTitle( os.path.split(file)[1] + ' - PySlices')
+            self.shell.NeedsCheckForSave=False
+            self.shell.SetSavePoint()
+            self.buffer.doc = document.Document(file)
+            self.buffer.name = self.buffer.doc.filename
+            self.buffer.modulename = self.buffer.doc.filebase
+            self.shell.ScrollToLine(0)
+        return
+    
+##     def bufferPrint(self):
+##         """Print buffer."""
+##         pass
+
+##     def bufferRevert(self):
+##         """Revert buffer to version of file on disk."""
+##         pass
+    
+    # was self.buffer.save(self): # """Save buffer."""
+    def simpleSave(self,confirmed=False):
+        filepath = self.buffer.doc.filepath
+        self.buffer.confirmed = confirmed
+        if not filepath:
+            return  # XXX Get filename
+        if not os.path.exists(filepath):
+            self.buffer.confirmed = True
+        if not self.buffer.confirmed:
+            self.buffer.confirmed = self.buffer.overwriteConfirm(filepath)
+        if self.buffer.confirmed:
+            try:
+                fid = open(filepath, 'wb')
+                self.shell.SavePySlicesFile(fid)
+            finally:
+                if fid:
+                    fid.close()
+            self.shell.SetSavePoint()
+            self.SetTitle( os.path.split(filepath)[1] + ' - PySlices')
+            self.shell.NeedsCheckForSave=False
+    
+    def bufferSave(self):
+        """Save buffer to its file."""
+        if self.buffer.doc.filepath:
+            # self.buffer.save()
+            self.simpleSave(confirmed=True)
+            cancel = False
+        else:
+            cancel = self.bufferSaveAs()
+        return cancel
+
+    def bufferSaveAs(self):
+        """Save buffer to a new filename."""
+        if self.bufferHasChanged() and self.buffer.doc.filepath:
+            cancel = self.bufferSuggestSave()
+            if cancel:
+                return cancel
+        filedir = ''
+        if self.buffer and self.buffer.doc.filedir:
+            filedir = self.buffer.doc.filedir
+        result = editor.saveSingle(title='Save PySlices File',directory=filedir,
+                                   wildcard='PySlices Files (*.pyslices)|*.pyslices')
+        if result.path!='':
+            if result.path[-9:]!=".pyslices":
+                result.path+=".pyslices"
+        if result.path:
+            self.buffer.doc = document.Document(result.path)
+            self.buffer.name = self.buffer.doc.filename
+            self.buffer.modulename = self.buffer.doc.filebase
+            self.simpleSave()
+            cancel = False
+        else:
+            cancel = True
+        return cancel
+    
+    def bufferSuggestSave(self):
+        """Suggest saving changes.  Return True if user selected Cancel."""
+        result = editor.messageDialog(parent=None,
+                               message='%s has changed.\n'
+                                       'Would you like to save it first'
+                                       '?' % self.buffer.name,
+                               title='Save current file?',
+                               style=wx.YES_NO | wx.CANCEL | wx.NO_DEFAULT |
+                                     wx.CENTRE | wx.ICON_QUESTION )
+        if result.positive:
+            cancel = self.bufferSave()
+        else:
+            cancel = result.text == 'Cancel'
+        return cancel
+
+    def updateNamespace(self):
+        """Update the buffer namespace for autocompletion and calltips."""
+        if self.buffer.updateNamespace():
+            self.SetStatusText('Namespace updated')
+        else:
+            self.SetStatusText('Error executing, unable to update namespace')
+
 
 
 # TODO : Update the help text
