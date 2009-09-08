@@ -1,3 +1,23 @@
+0.9.7.9 (9/8/09)
+-------------------
+Finalized the naming convention so that references to shell in the new "slices"
+shell are renamed to "sliceshell" (likewise, Shell becomes SlicesShell)
+
+Also, renamed the file "slices.py" to "sliceshell.py".
+Since my goal is to keep PySlices.py as the equivalent to PyCrust.py,
+   I think this new convention makes the most sense...
+
+Now (Finally):
+  shell.py contains the classes: Shell, ShellFacade, and ShellFrame
+  sliceshell.py contains the classes: SlicesShell, SlicesShellFacade,
+                                      and SlicesShellFrame
+  crust.py contains: Crust and CrustFrame
+  crustslices.py contains: CrustSlices and CrustSlicesFrame
+  PyShell.py and PySlicesShell.py are the respective standalone shell apps
+  PyCrust.py and PySlices.py are the respective apps that also include Filling
+  
+  frame.py etc. still continue to service both PyCrust and PySlices.
+
 0.9.7.8 (9/8/09)
 -------------------
 Added open/save abilities to PySlices (PyCrust remains the same).
@@ -18,8 +38,7 @@ Split the functionality of crust.py (functioning for both PyCrust and PySlices)
 
 After revising the naming conventions:
   shell.py contains the classes: Shell, ShellFacade, and ShellFrame
-  sliceshell.py contains the classes: SlicesShell, SlicesShellFacade,
-                                      and SlicesShellFrame
+  slice.py contains the classes: Shell, ShellFacade, and ShellFrame
   crust.py contains: Crust and CrustFrame
   crustslices.py contains: CrustSlices and CrustSlicesFrame
   PyShell.py and PySlicesShell.py are the respective standalone shell apps

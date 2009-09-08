@@ -18,4 +18,5 @@ import interpreter
 import introspect
 import pseudo
 import shell
+import sliceshell
 import version
