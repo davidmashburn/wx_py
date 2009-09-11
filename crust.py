@@ -16,7 +16,6 @@ import editwindow
 from filling import Filling
 import frame
 from shell import Shell
-from slices import Shell as Slice_Shell
 from version import VERSION
 
 
@@ -33,8 +32,6 @@ class Crust(wx.SplitterWindow):
                  rootIsNamespace=True, intro='', locals=None,
                  InterpClass=None,
                  startupScript=None, execStartupScript=True,
-                 showPySlicesTutorial=True,
-                 enableShellMode=False, hideFoldingMargin=False,
                  *args, **kwds):
         """Create Crust instance."""
         wx.SplitterWindow.__init__(self, parent, id, pos, size, style, name)
@@ -312,9 +309,6 @@ class CrustFrame(frame.Frame, frame.ShellFrameMixin):
                            InterpClass=InterpClass,
                            startupScript=self.startupScript,
                            execStartupScript=self.execStartupScript,
-                           showPySlicesTutorial=self.showPySlicesTutorial,
-                           enableShellMode=self.enableShellMode,
-                           hideFoldingMargin=self.hideFoldingMargin,
                            *args, **kwds)
         self.shell = self.crust.shell
 
@@ -364,16 +358,6 @@ class CrustFrame(frame.Frame, frame.ShellFrameMixin):
     def OnHelp(self, event):
         """Show a help dialog."""
         frame.ShellFrameMixin.OnHelp(self, event)
-    
-    def OnEnableShellMode(self,event):
-        """Change between Slices Mode and Shell Mode"""
-        frame.Frame.OnEnableShellMode(self,event)
-        self.shell.ToggleShellMode(self.enableShellMode)
-    
-    def OnHideFoldingMargin(self,event):
-        """Change between Slices Mode and Shell Mode"""
-        frame.Frame.OnHideFoldingMargin(self,event)
-        self.shell.ToggleFoldingMargin(self.hideFoldingMargin)
 
     def LoadSettings(self):
         if self.config is not None:
