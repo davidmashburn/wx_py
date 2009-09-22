@@ -1,3 +1,4 @@
+#/usr/bin/env python
 """PySlicesShell is a python shell application."""
 
 # The next two lines, and the other code below that makes use of

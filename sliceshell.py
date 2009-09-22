@@ -34,6 +34,8 @@ from path import ls,cd,pwd
 
 sys.ps3 = '<-- '  # Input prompt.
 USE_MAGIC=True
+# Force updates from long-running commands after this many seconds
+PRINT_UPDATE_MAX_TIME=2
 
 NAVKEYS = (wx.WXK_HOME, wx.WXK_END, wx.WXK_LEFT, wx.WXK_RIGHT,
            wx.WXK_UP, wx.WXK_DOWN, wx.WXK_PRIOR, wx.WXK_NEXT)
@@ -269,8 +271,8 @@ class SlicesShellFrame(frame.Frame, frame.ShellFrameMixin):
         """Close buffer."""
         if self.buffer.hasChanged():
             cancel = self.bufferSuggestSave()
-            if cancel and event.CanVeto():
-                event.Veto()
+            if cancel:
+                #event.Veto()
                 return cancel
         self.SaveSettings()
         self.sliceshell.destroy()
@@ -620,6 +622,9 @@ class SlicesShell(editwindow.EditWindow):
         
         # Use Margins to track input / output / slice number
         self.margins = True
+        
+        # For use with forced updates during long-running scripts
+        self.lastUpdate=None
         
         if self.margins:
             # margin 1 is already defined for the line numbers
@@ -2333,12 +2338,14 @@ class SlicesShell(editwindow.EditWindow):
         
         busy = wx.BusyCursor()
         self.waiting = True
+        self.lastUpdate=None
         for i in commands:
             self.more = self.interp.push(i+'\n')
             # (the \n stops many things from bouncing at the interpreter)
             # I could do the following, but I don't really like it!
             #if useMultiCommand:
             #    self.SplitSlice()
+        self.lastUpdate=None
         
         if not silent:
             self.MarkerAdd(self.GetIOSlice()[0],OUTPUT_BG)
@@ -2738,7 +2745,13 @@ class SlicesShell(editwindow.EditWindow):
         
         self.EnsureCaretVisible()
         
-
+        if self.waiting:
+            if self.lastUpdate==None:
+                self.lastUpdate=time.time()
+            if time.time()-self.lastUpdate > PRINT_UPDATE_MAX_TIME:
+                self.Update()
+                self.lastUpdate=time.time()
+    
     def fixLineEndings(self, text):
         """Return text with line endings replaced by OS-specific endings."""
         lines = text.split('\r\n')
@@ -2791,6 +2804,7 @@ class SlicesShell(editwindow.EditWindow):
             currentLine=self.GetLine(line_num)
             previousLine=self.GetLine(line_num-1)
             pstrip=previousLine.strip()
+            lstrip=previousLine.lstrip()
             
             # Get the first alnum word:
             first_word=[]
@@ -2805,10 +2819,10 @@ class SlicesShell(editwindow.EditWindow):
                 # because it is all whitespace!
                 indent=previousLine.strip('\n').strip('\r')
             else:
-                indent=previousLine[:(len(previousLine)-len(pstrip)-1)]
+                indent=previousLine[:(len(previousLine)-len(lstrip))]
                 if pstrip[-1]==':' and \
-                   first_word in ['if','else','elif','for','while',
-                                  'def','class','try','except','finally']:
+                    first_word in ['if','else','elif','for','while',
+                                   'def','class','try','except','finally']:
                     indent+=' '*4
             #ADD UNDO
             cpos=self.GetCurrentPos()
@@ -3312,7 +3326,6 @@ class SlicesShell(editwindow.EditWindow):
             command = command.replace('\n', os.linesep)
             self.write(command)
             self.processLine()
-
 
     def wrap(self, wrap=True):
         """Sets whether text is word wrapped."""

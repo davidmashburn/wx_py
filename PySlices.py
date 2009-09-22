@@ -1,3 +1,4 @@
+#/usr/bin/env python
 """PySlices is a python block code editor / shell and namespace browser application."""
 
 # The next two lines, and the other code below that makes use of

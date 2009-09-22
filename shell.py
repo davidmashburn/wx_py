@@ -29,6 +29,8 @@ from path import ls,cd,pwd
 
 sys.ps3 = '<-- '  # Input prompt.
 USE_MAGIC=True
+# Force updates from long-running commands after this many seconds
+PRINT_UPDATE_MAX_TIME=2
 
 NAVKEYS = (wx.WXK_END, wx.WXK_LEFT, wx.WXK_RIGHT,
            wx.WXK_UP, wx.WXK_DOWN, wx.WXK_PRIOR, wx.WXK_NEXT)
@@ -285,6 +287,9 @@ class Shell(editwindow.EditWindow):
 
         # Keep track of multi-line commands.
         self.more = False
+        
+        # For use with forced updates during long-running scripts
+        self.lastUpdate=None
 
         # Create the command history.  Commands are added into the
         # front of the list (ie. at index 0) as they are entered.
@@ -965,7 +970,9 @@ class Shell(editwindow.EditWindow):
          
         busy = wx.BusyCursor()
         self.waiting = True
+        self.lastUpdate=None
         self.more = self.interp.push(command)
+        self.lastUpdate=None
         self.waiting = False
         del busy
         if not self.more:
@@ -983,7 +990,7 @@ class Shell(editwindow.EditWindow):
         and (len(self.history) == 0 or command != self.history[0]):
             self.history.insert(0, command)
             dispatcher.send(signal="Shell.addHistory", command=command)
-
+    
     def write(self, text):
         """Display text in the shell.
 
@@ -991,7 +998,14 @@ class Shell(editwindow.EditWindow):
         text = self.fixLineEndings(text)
         self.AddText(text)
         self.EnsureCaretVisible()
-
+        
+        if self.waiting:
+            if self.lastUpdate==None:
+                self.lastUpdate=time.time()
+            if time.time()-self.lastUpdate > PRINT_UPDATE_MAX_TIME:
+                self.Update()
+                self.lastUpdate=time.time()
+    
     def fixLineEndings(self, text):
         """Return text with line endings replaced by OS-specific endings."""
         lines = text.split('\r\n')
@@ -1035,6 +1049,7 @@ class Shell(editwindow.EditWindow):
             currentLine=self.GetLine(line_num)
             previousLine=self.GetLine(line_num-1)[len(prompt):]
             pstrip=previousLine.strip()
+            lstrip=previousLine.lstrip()
             
             # Get the first alnum word:
             first_word=[]
@@ -1049,10 +1064,10 @@ class Shell(editwindow.EditWindow):
                 # because it is all whitespace!
                 indent=previousLine.strip('\n').strip('\r')
             else:
-                indent=previousLine[:(len(previousLine)-len(pstrip)-1)]
+                indent=previousLine[:(len(previousLine)-len(lstrip))]
                 if pstrip[-1]==':' and \
-                   first_word in ['if','else','elif','for','while',
-                                  'def','class','try','except','finally']:
+                    first_word in ['if','else','elif','for','while',
+                                   'def','class','try','except','finally']:
                     indent+=' '*4
             
             self.write(indent)

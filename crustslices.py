@@ -431,8 +431,8 @@ class CrustSlicesFrame(frame.Frame, frame.ShellFrameMixin):
         """Close buffer."""
         if self.buffer.hasChanged():
             cancel = self.bufferSuggestSave()
-            if cancel and event.CanVeto():
-                event.Veto()
+            if cancel:
+                #event.Veto()
                 return cancel
         self.SaveSettings()
         self.crust.sliceshell.destroy()
