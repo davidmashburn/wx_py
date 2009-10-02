@@ -1,4 +1,4 @@
-"""PySlices combines the slices and filling into one control."""
+"""SymPySlices combines the slices and filling into one control."""
 
 __author__ = "David N. Mashburn <david.n.mashburn@gmail.com> / "
 __author__ += "Patrick K. O'Brien <pobrien@orbtech.com>"
@@ -14,16 +14,17 @@ import sys
 
 import dispatcher
 import crust
+import crustslices
 import document
 import editwindow
 import editor
 from filling import Filling
 import frame
-from sliceshell import SlicesShell
+from sympysliceshell import SlicesShell
 from version import VERSION
 
 
-class CrustSlices(crust.Crust):
+class CrustSlices(crustslices.CrustSlices):
     """Slices based on SplitterWindow."""
 
     name = 'Slices'
@@ -101,14 +102,14 @@ class CrustSlices(crust.Crust):
         self.Bind(wx.EVT_SPLITTER_SASH_POS_CHANGED, self.OnChanged)
         self.Bind(wx.EVT_SPLITTER_DCLICK, self.OnSashDClick)
 
-class CrustSlicesFrame(crust.CrustFrame):
+class CrustSlicesFrame(crustslices.CrustSlicesFrame):
     """Frame containing all the PySlices components."""
 
     name = 'SliceFrame'
     revision = __revision__
 
 
-    def __init__(self, parent=None, id=-1, title='PySlices',
+    def __init__(self, parent=None, id=-1, title='SymPySlices',
                  pos=wx.DefaultPosition, size=wx.DefaultSize,
                  style=wx.DEFAULT_FRAME_STYLE,
                  rootObject=None, rootLabel=None, rootIsNamespace=True,
@@ -123,7 +124,7 @@ class CrustSlicesFrame(crust.CrustFrame):
         if size == wx.DefaultSize:
             self.SetSize((800, 600))
         
-        intro = 'PySlices %s - The Flakiest Python Shell... Cut up!' % VERSION
+        intro = 'SymPySlices %s - The Flakiest Python Shell... Cut up!' % VERSION
         
         self.SetStatusText(intro.replace('\n', ', '))
         self.crust = CrustSlices(parent=self, intro=intro,
@@ -154,14 +155,10 @@ class CrustSlicesFrame(crust.CrustFrame):
         
         self.Bind(wx.EVT_IDLE, self.OnIdle)
 
-    def OnClose(self, event):
-        """Event handler for closing."""
-        self.bufferClose()
-    
     def OnAbout(self, event):
         """Display an About window."""
-        title = 'About PySlices'
-        text = 'PySlices %s\n\n' % VERSION + \
+        title = 'About SymPySlices'
+        text = 'SymPySlices %s\n\n' % VERSION + \
                'Yet another Python shell, only flakier.\n\n' + \
                'Half-baked by Patrick K. O\'Brien,\n' + \
                'the other half is still in the oven.\n\n' + \
@@ -176,102 +173,6 @@ class CrustSlicesFrame(crust.CrustFrame):
         dialog.ShowModal()
         dialog.Destroy()
 
-    def OnEnableShellMode(self,event):
-        """Change between Slices Mode and Shell Mode"""
-        frame.Frame.OnEnableShellMode(self,event)
-        self.sliceshell.ToggleShellMode(self.enableShellMode)
-    
-    def OnHideFoldingMargin(self,event):
-        """Change between Slices Mode and Shell Mode"""
-        frame.Frame.OnHideFoldingMargin(self,event)
-        self.sliceshell.ToggleFoldingMargin(self.hideFoldingMargin)
-
-    # Stolen Straight from editor.EditorFrame
-    # Modified a little... :)
-    # ||
-    # \/
-    def OnIdle(self, event):
-        """Event handler for idle time."""
-        self._updateTitle()
-        event.Skip()
-    
-    def _updateTitle(self):
-        """Show current title information."""
-        title = self.GetTitle()
-        if self.bufferHasChanged():
-            if title.startswith('* '):
-                pass
-            else:
-                self.SetTitle('* ' + title)
-        else:
-            if title.startswith('* '):
-                self.SetTitle(title[2:])
-    
-    def hasBuffer(self):
-        """Return True if there is a current buffer."""
-        if self.buffer:
-            return True
-        else:
-            return False
-
-    def bufferClose(self):
-        """Close buffer."""
-        if self.buffer.hasChanged():
-            cancel = self.bufferSuggestSave()
-            if cancel:
-                #event.Veto()
-                return cancel
-        self.SaveSettings()
-        self.crust.sliceshell.destroy()
-        self.bufferDestroy()
-        self.Destroy()
-        
-        return False
-
-    def bufferCreate(self, filename=None):
-        """Create new buffer."""
-        self.bufferDestroy()
-        buffer = Buffer()
-        self.panel = panel = wx.Panel(parent=self, id=-1)
-        panel.Bind (wx.EVT_ERASE_BACKGROUND, lambda x: x)        
-        editor = Editor(parent=panel)
-        panel.editor = editor
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(editor.window, 1, wx.EXPAND)
-        panel.SetSizer(sizer)
-        panel.SetAutoLayout(True)
-        sizer.Layout()
-        buffer.addEditor(editor)
-        buffer.open(filename)
-        self.setEditor(editor)
-        self.editor.setFocus()
-        self.SendSizeEvent()
-        
-
-    def bufferDestroy(self):
-        """Destroy the current buffer."""
-        if self.buffer:
-            self.editor = None
-            self.buffer = None
-
-
-    def bufferHasChanged(self):
-        """Return True if buffer has changed since last save."""
-        if self.buffer:
-            return self.buffer.hasChanged()
-        else:
-            return False
-
-    def bufferNew(self):
-        """Create new buffer."""
-        if self.bufferHasChanged():
-            cancel = self.bufferSuggestSave()
-            if cancel:
-                return cancel
-        self.bufferCreate()
-        cancel = False
-        return cancel
-
     def bufferOpen(self,file=None):
         """Open file in buffer."""
         if self.bufferHasChanged():
@@ -280,13 +181,13 @@ class CrustSlicesFrame(crust.CrustFrame):
                 return cancel
         
         if file==None:
-            file=wx.FileSelector('Open a PySlices File',
-                                 wildcard='*.pyslices')
+            file=wx.FileSelector('Open a (Sym)PySlices File',
+                                 wildcard='*.sympyslices|*.sympyslices|*.pyslices|*.pyslices')
         if file!=None and file!=u'':
             fid=open(file,'r')
             self.sliceshell.LoadPySlicesFile(fid)
             fid.close()
-            self.SetTitle( os.path.split(file)[1] + ' - PySlices')
+            self.SetTitle( os.path.split(file)[1] + ' - SymPySlices')
             self.sliceshell.NeedsCheckForSave=False
             self.sliceshell.SetSavePoint()
             self.buffer.doc = document.Document(file)
@@ -295,15 +196,6 @@ class CrustSlicesFrame(crust.CrustFrame):
             self.sliceshell.ScrollToLine(0)
         return
     
-##     def bufferPrint(self):
-##         """Print buffer."""
-##         pass
-
-##     def bufferRevert(self):
-##         """Revert buffer to version of file on disk."""
-##         pass
-    
-    # was self.buffer.save(self): # """Save buffer."""
     def simpleSave(self,confirmed=False):
         filepath = self.buffer.doc.filepath
         self.buffer.confirmed = confirmed
@@ -321,19 +213,9 @@ class CrustSlicesFrame(crust.CrustFrame):
                 if fid:
                     fid.close()
             self.sliceshell.SetSavePoint()
-            self.SetTitle( os.path.split(filepath)[1] + ' - PySlices')
+            self.SetTitle( os.path.split(filepath)[1] + ' - SymPySlices')
             self.sliceshell.NeedsCheckForSave=False
     
-    def bufferSave(self):
-        """Save buffer to its file."""
-        if self.buffer.doc.filepath:
-            # self.buffer.save()
-            self.simpleSave(confirmed=True)
-            cancel = False
-        else:
-            cancel = self.bufferSaveAs()
-        return cancel
-
     def bufferSaveAs(self):
         """Save buffer to a new filename."""
         if self.bufferHasChanged() and self.buffer.doc.filepath:
@@ -343,11 +225,11 @@ class CrustSlicesFrame(crust.CrustFrame):
         filedir = ''
         if self.buffer and self.buffer.doc.filedir:
             filedir = self.buffer.doc.filedir
-        result = editor.saveSingle(title='Save PySlices File',directory=filedir,
-                                   wildcard='PySlices Files (*.pyslices)|*.pyslices')
+        result = editor.saveSingle(title='Save SymPySlices File',directory=filedir,
+                                   wildcard='SymPySlices Files (*.sympyslices)|*.sympyslices')
         if result.path!='':
-            if result.path[-9:]!=".pyslices":
-                result.path+=".pyslices"
+            if result.path[-9:]!=".sympyslices":
+                result.path+=".sympyslices"
         if result.path:
             self.buffer.doc = document.Document(result.path)
             self.buffer.name = self.buffer.doc.filename
@@ -357,25 +239,3 @@ class CrustSlicesFrame(crust.CrustFrame):
         else:
             cancel = True
         return cancel
-    
-    def bufferSuggestSave(self):
-        """Suggest saving changes.  Return True if user selected Cancel."""
-        result = editor.messageDialog(parent=None,
-                               message='%s has changed.\n'
-                                       'Would you like to save it first'
-                                       '?' % self.buffer.name,
-                               title='Save current file?',
-                               style=wx.YES_NO | wx.CANCEL | wx.NO_DEFAULT |
-                                     wx.CENTRE | wx.ICON_QUESTION )
-        if result.positive:
-            cancel = self.bufferSave()
-        else:
-            cancel = result.text == 'Cancel'
-        return cancel
-
-    def updateNamespace(self):
-        """Update the buffer namespace for autocompletion and calltips."""
-        if self.buffer.updateNamespace():
-            self.SetStatusText('Namespace updated')
-        else:
-            self.SetStatusText('Error executing, unable to update namespace')

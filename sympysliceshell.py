@@ -1,4 +1,4 @@
-"""Slices is an interactive text control in which a user types in
+"""SympySlices is an interactive text control in which a user types in
 commands to be sent to the interpreter.  This particular shell is
 based on wxPython's wxStyledTextCtrl.
 
@@ -7,7 +7,7 @@ Slices is a version of shell modified by David Mashburn."""
 
 __author__ = "David N. Mashburn <david.n.mashburn@gmail.com> / "
 __author__ += "Patrick K. O'Brien <pobrien@orbtech.com>"
-__cvsid__ = "$Id: sliceshell.py 60100 2009-04-12 02:56:29Z RD $"
+__cvsid__ = "$Id: sympysliceshell.py 60100 2009-04-12 02:56:29Z RD $"
 __revision__ = "$Revision: 60100 $"[11:-2]
 
 import wx
@@ -31,6 +31,8 @@ from version import VERSION
 from magic import magic
 from path import ls,cd,pwd
 
+import symbolConversion
+from symbolConversion import ESC_SYMBOL
 
 sys.ps3 = '<-- '  # Input prompt.
 USE_MAGIC=True
@@ -83,6 +85,8 @@ IO_END_MASK = ( 1<<INPUT_END | 1<<OUTPUT_END )
 usrBinEnvPythonText = '#!/usr/bin/env python\n'
 pyslicesFormatHeaderText = ['#PySlices Save Format Version 1.1 (PySlices v0.9.7.8 and later)\n',
                             '#PySlices Save Format Version 1.2 (PySlices v0.9.8 and later)\n']
+# .sympyslices files also support unicode input...in an non-unicode Format
+sympyslicesFormatHeaderText = ['#SymPySlices Save Format Version 1.0 (SymPySlices v0.9.8 and later)\n']
 groupingStartText = '#PySlices Marker Information -- Begin Grouping Slice\n'
 inputStartText = '#PySlices Marker Information -- Begin Input Slice\n'
 outputStartText = '#PySlices Marker Information -- Begin Output Slice\n'
@@ -91,8 +95,9 @@ tutorialText = """
 
                             Tutorial!!!
 ------------------------------------------------------------------------
-PySlices is the newest member of the Py suite!
-It is a modified version of PyCrust that supports multi-line commands.
+SymPySlices is part of the new and improved Py suite!
+PySlices is a modified version of PyCrust that supports multi-line commands.
+SymPySlices has automatic support for sympy (if it is installed).
 
 Input and output are contained in "Slices" shown as markers in the left margin.
 Input Slices have RED margins (active, editable).
@@ -122,14 +127,34 @@ If you want a more traditional shell feel, try enabling "Shell Mode" in
 In Shell Mode, two returns in a row executes the command, and
     Ctrl-Return and Shift-Return always print newlines.
 
+SymPySlices adds further enhancements!  Undefined variables are
+automatically converted to sympy symbols!
+
+Also, SymPySlices adds unicode support via an auto-replace method!
+
+Input is also supported using the escape key (<ESC>)
+For instance, typing either <ESC>theta<ESC>   or   <ESC>th<ESC>
+will automatically insert the Greek letter theta!
+
+In SymPySlices, these unicode characters can also be used as valid python!
+
+Right now only Greek characters are supported, but many others could be
+added in the future!  It is also possible (theoretically) to add operator support.
+
+In total, typing this below:
+<ESC>theta<ESC> = 2
+<ESC>theta<ESC> + <ESC>phi<ESC>
+
+Should result in 2 + \xcf\x86!
+
 Saving and opening "sessions" is now supported!  This is a little
-different to other shells where the history is saved.  With PySlices, 
-the whole document is saved in a simple text format!
+different to other shells where the history is saved.  With PySlices and
+SymPySlices, the whole document is saved in a simple text format!
 
 To disable this Tutorial on startup, uncheck it in the menu at:
 "Options->Startup->Show PySlices tutorial"
 
-PySlices may not be the best thing since sliced bread, but
+SymPySlices may not be the best thing since sliced bread, but
 I hope it makes using Python a little bit sweeter!
 """
 
@@ -139,7 +164,7 @@ class SlicesShellFrame(frame.Frame, frame.ShellFrameMixin):
     name = 'SlicesShell Frame'
     revision = __revision__
 
-    def __init__(self, parent=None, id=-1, title='PySlicesShell',
+    def __init__(self, parent=None, id=-1, title='SymPySlicesShell',
                  pos=wx.DefaultPosition, size=wx.DefaultSize,
                  style=wx.DEFAULT_FRAME_STYLE, locals=None,
                  InterpClass=None,
@@ -152,7 +177,7 @@ class SlicesShellFrame(frame.Frame, frame.ShellFrameMixin):
         if size == wx.DefaultSize:
             self.SetSize((750, 525))
         
-        intro = 'PySlices %s - The Flakiest Python Shell... Cut Up!' % VERSION
+        intro = 'SymPySlices %s - The Flakiest Python Shell... Cut Up!' % VERSION
         self.SetStatusText(intro.replace('\n', ', '))
         self.sliceshell = SlicesShell(parent=self, id=-1, introText=intro,
                                locals=locals, InterpClass=InterpClass,
@@ -191,8 +216,8 @@ class SlicesShellFrame(frame.Frame, frame.ShellFrameMixin):
 
     def OnAbout(self, event):
         """Display an About window."""
-        title = 'About PySliceShell'
-        text = 'PySliceShell %s\n\n' % VERSION + \
+        title = 'About SymPySliceShell'
+        text = 'SymPySliceShell %s\n\n' % VERSION + \
                'Yet another Python shell, only flakier.\n\n' + \
                'Half-baked by Patrick K. O\'Brien,\n' + \
                'the other half is still in the oven.\n\n' + \
@@ -335,13 +360,13 @@ class SlicesShellFrame(frame.Frame, frame.ShellFrameMixin):
                 return cancel
         
         if file==None:
-            file=wx.FileSelector('Open a PySlices File',
-                                 wildcard='*.pyslices')
+            file=wx.FileSelector('Open a (Sym)PySlices File',
+                                 wildcard='*.sympyslices|*.sympyslices|*.pyslices|*.pyslices')
         if file!=None and file!=u'':
             fid=open(file,'r')
             self.sliceshell.LoadPySlicesFile(fid)
             fid.close()
-            self.SetTitle( os.path.split(file)[1] + ' - PySlices')
+            self.SetTitle( os.path.split(file)[1] + ' - SymPySlices')
             self.sliceshell.NeedsCheckForSave=False
             self.sliceshell.SetSavePoint()
             self.buffer.doc = document.Document(file)
@@ -376,7 +401,7 @@ class SlicesShellFrame(frame.Frame, frame.ShellFrameMixin):
                 if fid:
                     fid.close()
             self.sliceshell.SetSavePoint()
-            self.SetTitle( os.path.split(filepath)[1] + ' - PySlices')
+            self.SetTitle( os.path.split(filepath)[1] + ' - SymPySlices')
             self.sliceshell.NeedsCheckForSave=False
     
     def bufferSave(self):
@@ -398,11 +423,11 @@ class SlicesShellFrame(frame.Frame, frame.ShellFrameMixin):
         filedir = ''
         if self.buffer and self.buffer.doc.filedir:
             filedir = self.buffer.doc.filedir
-        result = editor.saveSingle(title='Save PySlices File',directory=filedir,
-                                   wildcard='PySlices Files (*.pyslices)|*.pyslices')
+        result = editor.saveSingle(title='Save SymPySlices File',directory=filedir,
+                                   wildcard='SymPySlices Files (*.sympyslices)|*.sympyslices')
         if result.path!='':
-            if result.path[-9:]!=".pyslices":
-                result.path+=".pyslices"
+            if result.path[-9:]!=".sympyslices":
+                result.path+=".sympyslices"
         if result.path:
             self.buffer.doc = document.Document(result.path)
             self.buffer.name = self.buffer.doc.filename
@@ -783,10 +808,11 @@ class SlicesShell(editwindow.EditWindow):
         if showPySlicesTutorial:
             self.write(tutorialText,'Output')
             tutStart=5
-            testStart=16
-            outStart=[tutStart,testStart+3]
-            outEnd=[tutStart-1,testStart-1]
-            inStart=[testStart]
+            testStart=17
+            symTestStart=56
+            outStart=[tutStart,testStart+3,symTestStart+1]
+            outEnd=[tutStart-1,testStart-1,symTestStart-1]
+            inStart=[testStart,symTestStart]
             inMiddle=[testStart+1]
             inEnd=[testStart+2]
         
@@ -804,6 +830,13 @@ class SlicesShell(editwindow.EditWindow):
             self.execStartupScript(startupScript)
         else:
             self.prompt()
+        # Also, force import of sympy
+        try:
+            import sympy
+        except ImportError:
+            print 'Sympy must be installed to use SymPySlices!'
+            self.exit()
+        self.interp.push("import sympy\n")
         
         outStart+=[0]
         outEnd+=[self.GetLineCount()-2]
@@ -1612,7 +1645,6 @@ class SlicesShell(editwindow.EditWindow):
                 self.execOnNextReturn=True
             elif doSubmitCommand:
                 self.DeleteOutputSlicesAfter()
-            
                 self.processLine()
         
         # Let Ctrl-Alt-* get handled normally.
@@ -1623,9 +1655,9 @@ class SlicesShell(editwindow.EditWindow):
         elif key == wx.WXK_ESCAPE:
             if self.CallTipActive():
                 event.Skip()
-            #else: # NO!!! BAD!!
-            #    self.clearCommand()
-
+            elif self.CanEdit():
+                if not self.CheckForAutoSymbolReplacement():
+                    self.write(unichr(0x1022ee))
         # Clear the current command
         elif key == wx.WXK_BACK and controlDown and shiftDown:
             self.clearCommand()
@@ -1930,6 +1962,30 @@ class SlicesShell(editwindow.EditWindow):
                            wx.WXK_ALT,wx.WXK_COMMAND,wx.WXK_CONTROL,wx.WXK_SHIFT]:
                 self.MarginUnselectAll()
     
+    def CheckForAutoSymbolReplacement(self):
+        # Use UTF-8 only
+        lineTxt = unicode(self.GetCurLine()[0]).encode('utf-8')
+        if lineTxt.count(ESC_SYMBOL) > 0:
+            linePos=self.PositionFromLine(self.GetCurrentLine())
+            escPos = lineTxt.find(ESC_SYMBOL) + linePos
+            cpos = self.GetCurrentPos()
+            if cpos==escPos or cpos==escPos+1:
+                self.SetSelection(escPos,escPos+1)
+                self.ReplaceSelection('')
+            else:
+                startPos = min(escPos,cpos)
+                endPos = max(escPos+1,cpos)
+                self.SetSelection(startPos,endPos)
+                startPos -= linePos
+                endPos -= linePos
+                replace = lineTxt[startPos:endPos].replace(ESC_SYMBOL,'')
+                uniReplace = symbolConversion.Ascii2Unicode(replace)
+                print lineTxt,[startPos,endPos],replace,uniReplace
+                self.ReplaceSelection(uniReplace)
+            return True
+        else:
+            return False
+            
     
     def MarginSelectAll(self):
         num_lines=self.GetLineCount()
@@ -2342,8 +2398,25 @@ class SlicesShell(editwindow.EditWindow):
         busy = wx.BusyCursor()
         self.waiting = True
         self.lastUpdate=None
+
+        # Special syntax to force automatic symbol creation... Hooray!
         for i in commands:
-            self.more = self.interp.push(i+'\n')
+            if i.strip()!='':
+                newCommand = symbolConversion.FormatUnicodeForPythonInterpreter(i)
+                newCommand = '    '+newCommand.replace('\n','\n    ') # space everything out more...
+                newCommand = """while SYMPYSLICES_done==False:\n""" + \
+                            """     SYMPYSLICES_done=True\n""" + \
+                            """     try:\n""" + \
+                            """         """ + newCommand + """\n""" + \
+                            """     except NameError as ne:\n""" + \
+                            """         name=ne.args[0].split("'")[1]\n""" + \
+                            """         exec(name+'=sympy.Symbol("'+name+'")')\n""" + \
+                            """         SYMPYSLICES_done=False\n"""
+                self.interp.push("SYMPYSLICES_done=False\n")
+            else:
+                newCommand=i
+            
+            self.more = self.interp.push(newCommand)
             # (the \n stops many things from bouncing at the interpreter)
             # I could do the following, but I don't really like it!
             #if useMultiCommand:
@@ -2561,6 +2634,7 @@ class SlicesShell(editwindow.EditWindow):
         Replace line endings with OS-specific endings."""
         text = self.fixLineEndings(text)
         split=text.split(os.linesep)
+        text = symbolConversion.FormatAsciiForDisplay(text)
         self.AddText(text)
         
         # This part handles all the marker stuff that accompanies
@@ -3432,11 +3506,12 @@ class SlicesShell(editwindow.EditWindow):
         ioStartTypes=[]
         removeComment=False
         
-        # Read the initial three (or four) lines that have version and marker information
+        # Read the initial three lines that have version and marker information
         line=fid.readline()
         if line == usrBinEnvPythonText:
             line=fid.readline() # Add the option to place #!/usr/bin/env python at the top
-        if line not in pyslicesFormatHeaderText:  print invalidFileString ; return
+        if line not in sympyslicesFormatHeaderText and \
+           line not in pyslicesFormatHeaderText:  print invalidFileString ; return
         line=fid.readline()
         if line != groupingStartText:  print invalidFileString ; return
         line=fid.readline()
@@ -3542,7 +3617,7 @@ class SlicesShell(editwindow.EditWindow):
     def SavePySlicesFile(self,fid):
         addComment=False
         fid.write(usrBinEnvPythonText.replace('\n',os.linesep))
-        fid.write(pyslicesFormatHeaderText[-1].replace('\n',os.linesep))
+        fid.write(sympyslicesFormatHeaderText[-1].replace('\n',os.linesep))
         for i in range(self.GetLineCount()):
             markers=self.MarkerGet(i)
             if markers & ( 1<<GROUPING_START | 1<<GROUPING_START_FOLDED ):
@@ -3554,7 +3629,9 @@ class SlicesShell(editwindow.EditWindow):
                 fid.write(outputStartText.replace('\n',os.linesep))
                 addComment=True
             if addComment: fid.write('#')
-            fid.write(self.GetLine(i).replace('\n',os.linesep))
+            convText = symbolConversion.FormatUnicodeForPythonInterpreter(
+                                                        self.GetLine(i)  ) 
+            fid.write(convText.replace('\n',os.linesep))
     
     # FIX ME!!
     def LoadPyFileAsSlice(self,fid):

@@ -155,10 +155,6 @@ class Crust(wx.SplitterWindow):
         config.WriteInt('Sash/IsSplit', self.issplit)
         config.WriteInt('View/Zoom/Display', self.display.GetZoom())
         
-
-           
-
-
 class Display(editwindow.EditWindow):
     """STC used to display an object using Pretty Print."""
 
@@ -200,18 +196,19 @@ class Display(editwindow.EditWindow):
 class Calltip(wx.TextCtrl):
     """Text control containing the most recent shell calltip."""
 
-    def __init__(self, parent=None, id=-1):
+    def __init__(self, parent=None, id=-1,ShellClassName='Shell'):
         style = (wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH2)
         wx.TextCtrl.__init__(self, parent, id, style=style)
         self.SetBackgroundColour(wx.Colour(255, 255, 208))
-        dispatcher.connect(receiver=self.display, signal='Shell.calltip')
+        self.ShellClassName=ShellClassName
+        dispatcher.connect(receiver=self.display, signal=self.ShellClassName+'.calltip')
 
         df = self.GetFont()
         font = wx.Font(df.GetPointSize(), wx.TELETYPE, wx.NORMAL, wx.NORMAL)
         self.SetFont(font)
 
     def display(self, calltip):
-        """Receiver for Shell.calltip signal."""
+        """Receiver for """+self.ShellClassName+""".calltip signal."""
         ## self.SetValue(calltip)  # Caused refresh problem on Windows.
         self.Clear()
         self.AppendText(calltip)
@@ -221,16 +218,16 @@ class Calltip(wx.TextCtrl):
 class SessionListing(wx.TextCtrl):
     """Text control containing all commands for session."""
 
-    def __init__(self, parent=None, id=-1):
+    def __init__(self, parent=None, id=-1,ShellClassName='Shell'):
         style = (wx.TE_MULTILINE | wx.TE_READONLY |
                  wx.TE_RICH2 | wx.TE_DONTWRAP)
         wx.TextCtrl.__init__(self, parent, id, style=style)
         dispatcher.connect(receiver=self.addHistory,
-                           signal="Shell.addHistory")
+                           signal=ShellClassName+".addHistory")
         dispatcher.connect(receiver=self.clearHistory,
-                           signal="Shell.clearHistory")
+                           signal=ShellClassName+".clearHistory")
         dispatcher.connect(receiver=self.loadHistory,
-                           signal="Shell.loadHistory")
+                           signal=ShellClassName+".loadHistory")
 
         df = self.GetFont()
         font = wx.Font(df.GetPointSize(), wx.TELETYPE, wx.NORMAL, wx.NORMAL)
