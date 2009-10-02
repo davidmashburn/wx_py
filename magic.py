@@ -1,5 +1,6 @@
-"""magic is a function that allows a simple line from the interpreter be translated from a more bash-like form
-to a python form.  For instance, 'plot a' is transformed to 'plot(a)'
+"""magic.py is a utility that allows a simple line from the interpreter
+be translated from a more bash-like form to a python form.
+For instance, 'plot a' is transformed to 'plot(a)'
 Special exceptions are made for predefined ls,cd, and pwd functions"""
 
 __author__ = "David N. Mashburn <david.n.mashburn@gmail.com>"

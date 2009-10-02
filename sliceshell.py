@@ -5,9 +5,9 @@ based on wxPython's wxStyledTextCtrl.
 Sponsored by Orbtech - Your source for Python programming expertise.
 Slices is a version of shell modified by David Mashburn."""
 
-__author__ = "Patrick K. O'Brien <pobrien@orbtech.com> / "
-__author__ += "David N. Mashburn <david.n.mashburn@gmail.com>"
-__cvsid__ = "$Id: shell.py 60100 2009-04-12 02:56:29Z RD $"
+__author__ = "David N. Mashburn <david.n.mashburn@gmail.com> / "
+__author__ += "Patrick K. O'Brien <pobrien@orbtech.com>"
+__cvsid__ = "$Id: sliceshell.py 60100 2009-04-12 02:56:29Z RD $"
 __revision__ = "$Revision: 60100 $"[11:-2]
 
 import wx
@@ -80,7 +80,9 @@ IO_ANY_START_MASK = ( 1<<INPUT_START | 1<<OUTPUT_START |
 IO_MIDDLE_MASK = ( 1<<INPUT_MIDDLE | 1<<OUTPUT_MIDDLE )
 IO_END_MASK = ( 1<<INPUT_END | 1<<OUTPUT_END )
 
-pyslicesFormatHeaderText = '#PySlices Save Format Version 1.1 (PySlices v0.9.7.8 and later)\n'
+usrBinEnvPythonText = '#!/usr/bin/env python\n'
+pyslicesFormatHeaderText = ['#PySlices Save Format Version 1.1 (PySlices v0.9.7.8 and later)\n',
+                            '#PySlices Save Format Version 1.2 (PySlices v0.9.8 and later)\n']
 groupingStartText = '#PySlices Marker Information -- Begin Grouping Slice\n'
 inputStartText = '#PySlices Marker Information -- Begin Input Slice\n'
 outputStartText = '#PySlices Marker Information -- Begin Output Slice\n'
@@ -3429,9 +3431,11 @@ class SlicesShell(editwindow.EditWindow):
         ioStartTypes=[]
         removeComment=False
         
-        # Read the initial three lines that have version and marker information
+        # Read the initial three (or four) lines that have version and marker information
         line=fid.readline()
-        if line != pyslicesFormatHeaderText:  print invalidFileString ; return
+        if line == usrBinEnvPythonText:
+            line=fid.readline() # Add the option to place #!/usr/bin/env python at the top
+        if line not in pyslicesFormatHeaderText:  print invalidFileString ; return
         line=fid.readline()
         if line != groupingStartText:  print invalidFileString ; return
         line=fid.readline()
@@ -3536,7 +3540,8 @@ class SlicesShell(editwindow.EditWindow):
     
     def SavePySlicesFile(self,fid):
         addComment=False
-        fid.write(pyslicesFormatHeaderText.replace('\n',os.linesep))
+        fid.write(usrBinEnvPythonText.replace('\n',os.linesep))
+        fid.write(pyslicesFormatHeaderText[-1].replace('\n',os.linesep))
         for i in range(self.GetLineCount()):
             markers=self.MarkerGet(i)
             if markers & ( 1<<GROUPING_START | 1<<GROUPING_START_FOLDED ):

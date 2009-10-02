@@ -1,3 +1,5 @@
+"""path.py is a utility containing some very simple path utilities for Py to use"""
+
 __author__ = "David N. Mashburn <david.n.mashburn@gmail.com>"
 # 07/01/2009
 
