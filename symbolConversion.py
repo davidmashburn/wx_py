@@ -26,6 +26,15 @@ GREEK_names = ['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon', 'Zeta', 'Eta', 'The
 allNames = greek_names + GREEK_names
 allExpandedAsciiNames = ['SYMPYSL_'+i+'_' for i in allNames]
 
+operators = [unichr(i).encode('utf-8') for i in [0x000b7,0x02a2f]]
+operator_names = ['dot', 'cross']
+
+n2o = dict([[operator_names[i],operators[i]] for i in range(len(operators))])
+o2n = dict([[operators[i],operator_names[i]] for i in range(len(operators))])
+
+allOperators = operators
+allExpandedAsciiOperatorNames = ['|Infix(numpy.'+i+')|' for i in operator_names]
+
 # Dictionaries to convert from Greek names to Greek characters
 n2g = dict([[greek_names[i],greek[i]] for i in range(24)])
 N2G = dict([[GREEK_names[i],GREEK[i]] for i in range(24)])
@@ -124,6 +133,8 @@ def Ascii2Unicode(ascStr):
         return N2G[A2N[ascStr]]
     elif ascStr in AA2N.keys():
         return N2G[AA2N[ascStr]]
+    elif ascStr in n2o.keys():
+        return n2o[ascStr]
     else:
         return ascStr
 
@@ -136,6 +147,8 @@ def Unicode2Ascii(uniChar):
         return g2n[uniChar]
     elif uniChar in GREEK:
         return G2N[uniChar]
+    elif uniChar in operators:
+        return o2n[uniChar]
     else:
         print 'Error!  Unrecognized Unicode Charater!'
         return hex(ord(uniChar))
@@ -145,6 +158,9 @@ def FormatUnicodeForPythonInterpreter(s): # s is a unicode string
     for i in allSymbols:
         if i in s:
             s = s.replace(i,'SYMPYSL_'+Unicode2Ascii(i)+'_')
+    for i in allOperators:
+        if i in s:
+            s = s.replace(i,'|Infix(numpy.'+Unicode2Ascii(i)+')|')
     
     return s.encode('ascii')
 
@@ -152,6 +168,10 @@ def FormatAsciiForDisplay(s): # s is an ascii string
     for i in allExpandedAsciiNames:
         if i in s:
             asciiName = i[8:-1]
+            s = s.replace(i,Ascii2Unicode(asciiName))
+    for i in allExpandedAsciiOperatorNames:
+        if i in s:
+            asciiName = i[13:-2]
             s = s.replace(i,Ascii2Unicode(asciiName))
     
     return s

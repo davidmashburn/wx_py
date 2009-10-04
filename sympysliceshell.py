@@ -837,6 +837,16 @@ class SlicesShell(editwindow.EditWindow):
             print 'Sympy must be installed to use SymPySlices!'
             self.exit()
         self.interp.push("import sympy\n")
+        self.interp.push("import numpy\n")
+        self.interp.push("""class Infix:
+    def __init__(self, function):
+        self.function = function
+    def __ror__(self, other):
+        return Infix(lambda x, self=self, other=other: self.function(other, x))
+    def __or__(self, other):
+        return self.function(other)
+    def __call__(self, value1, value2):
+        return self.function(value1, value2)\n""")
         
         outStart+=[0]
         outEnd+=[self.GetLineCount()-2]
@@ -1970,11 +1980,11 @@ class SlicesShell(editwindow.EditWindow):
             escPos = lineTxt.find(ESC_SYMBOL) + linePos
             cpos = self.GetCurrentPos()
             if cpos==escPos or cpos==escPos+1:
-                self.SetSelection(escPos,escPos+1)
+                self.SetSelection(escPos,escPos+3)
                 self.ReplaceSelection('')
             else:
                 startPos = min(escPos,cpos)
-                endPos = max(escPos+1,cpos)
+                endPos = max(escPos+3,cpos)
                 self.SetSelection(startPos,endPos)
                 startPos -= linePos
                 endPos -= linePos
@@ -2403,7 +2413,7 @@ class SlicesShell(editwindow.EditWindow):
         for i in commands:
             if i.strip()!='':
                 newCommand = symbolConversion.FormatUnicodeForPythonInterpreter(i)
-                newCommand = '    '+newCommand.replace('\n','\n    ') # space everything out more...
+                newCommand = newCommand.replace('\n','\n        ') # space everything out more...
                 newCommand = """while SYMPYSLICES_done==False:\n""" + \
                             """     SYMPYSLICES_done=True\n""" + \
                             """     try:\n""" + \
