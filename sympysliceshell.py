@@ -1991,7 +1991,7 @@ class SlicesShell(editwindow.EditWindow):
                 endPos -= linePos
                 replace = lineTxt[startPos:endPos].replace(ESC_SYMBOL,'')
                 uniReplace = symbolConversion.Ascii2Unicode(replace)
-                print lineTxt,[startPos,endPos],replace,uniReplace
+                #print lineTxt,[startPos,endPos],replace,uniReplace
                 self.ReplaceSelection(uniReplace)
             return True
         else:
@@ -2427,7 +2427,6 @@ class SlicesShell(editwindow.EditWindow):
             else:
                 newCommand=i
             
-            print newCommand
             hasSpecialOperators = False
             for i in symbolConversion.expandedOperatorAsciiNames:
                 if i in newCommand:
