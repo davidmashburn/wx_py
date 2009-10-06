@@ -7,7 +7,7 @@ __revision__ = "$Revision: 44235 $"[11:-2]
 
 import os
 import sys
-from code import InteractiveInterpreter
+from code import InteractiveInterpreter, compile_command
 import dispatcher
 import introspect
 import wx
@@ -105,7 +105,7 @@ class Interpreter(InteractiveInterpreter):
         stdin, stdout, stderr = sys.stdin, sys.stdout, sys.stderr
         sys.stdin, sys.stdout, sys.stderr = \
                    self.stdin, self.stdout, self.stderr
-        self.runcode(compile(mod,'','exec'))
+        self.runcode(compile(mod,'','single'))
         # If sys.std* is still what we set it to, then restore it.
         # But, if the executed source changed sys.std*, assume it was
         # meant to be changed and leave it. Power to the people.

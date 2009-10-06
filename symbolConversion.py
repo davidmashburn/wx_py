@@ -44,7 +44,7 @@ def ASTWithConversion(s):
     rowCol = GetOperatorRowCol(s,names)
     for name in names:
         s = s.replace(nameAddOn+name+'_','+')
-    mod=ast.parse(s)
+    mod=ast.parse(s,mode='single')
     bo2f=BinOp2Function()
     for name in names:
         bo2f.funcName = '__'+name+'__'
@@ -66,24 +66,22 @@ GREEK=[unichr(i).encode('utf-8') for i in range(0x00391,0x00391+25)]
 del(greek[17]) # Delete alternate form of sigma
 del(GREEK[17]) # Delete empty character...
 
-allSymbols = greek + GREEK
+operators = [unichr(i).encode('utf-8') for i in [0x000b7,0x02a2f]]
+
+allSymbols = greek + GREEK + operators
 
 # Ordered names for Greek alphabets
 greek_names = ['alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta', 'eta', 'theta', 'iota', 'kappa', 'lambda', 'mu', 'nu', 'xi', 'omicron', 'pi', 'rho', 'sigma', 'tau', 'upsilon', 'phi', 'chi', 'psi', 'omega']
 GREEK_names = ['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon', 'Zeta', 'Eta', 'Theta', 'Iota', 'Kappa', 'Lambda', 'Mu', 'Nu', 'Xi', 'Omicron', 'Pi', 'Rho', 'Sigma', 'Tau', 'Upsilon', 'Phi', 'Chi', 'Psi', 'Omega']
 
-operators = [unichr(i).encode('utf-8') for i in [0x000b7,0x02a2f]]
 operator_names = ['dot', 'cross']
-expandedOperatorAsciiNames = [nameAddOn + i + '_' for i in operator_names]
 
 allNames = greek_names + GREEK_names + operator_names
 allExpandedAsciiNames = [nameAddOn + i + '_' for i in allNames]
+expandedOperatorAsciiNames = [nameAddOn + i + '_' for i in operator_names]
 
 n2o = dict([[operator_names[i],operators[i]] for i in range(len(operators))])
 o2n = dict([[operators[i],operator_names[i]] for i in range(len(operators))])
-
-allOperators = operators
-allExpandedAsciiOperatorNames = ['|Infix(numpy.'+i+')|' for i in operator_names]
 
 # Dictionaries to convert from Greek names to Greek characters
 n2g = dict([[greek_names[i],greek[i]] for i in range(24)])
@@ -208,9 +206,6 @@ def FormatUnicodeForPythonInterpreter(s): # s is a unicode string
     for i in allSymbols:
         if i in s:
             s = s.replace(i,'SYMPYSL_'+Unicode2Ascii(i)+'_')
-    for i in allOperators:
-        if i in s:
-            s = s.replace(i,'|Infix(numpy.'+Unicode2Ascii(i)+')|')
     
     return s.encode('ascii')
 
@@ -218,10 +213,6 @@ def FormatAsciiForDisplay(s): # s is an ascii string
     for i in allExpandedAsciiNames:
         if i in s:
             asciiName = i[8:-1]
-            s = s.replace(i,Ascii2Unicode(asciiName))
-    for i in allExpandedAsciiOperatorNames:
-        if i in s:
-            asciiName = i[13:-2]
             s = s.replace(i,Ascii2Unicode(asciiName))
     
     return s

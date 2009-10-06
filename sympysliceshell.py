@@ -2427,6 +2427,7 @@ class SlicesShell(editwindow.EditWindow):
             else:
                 newCommand=i
             
+            print newCommand
             hasSpecialOperators = False
             for i in symbolConversion.expandedOperatorAsciiNames:
                 if i in newCommand:
