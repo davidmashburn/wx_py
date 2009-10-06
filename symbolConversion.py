@@ -3,6 +3,55 @@ symbols to an ascii format and vice-versa"""
 
 __author__ = "David N. Mashburn <david.n.mashburn@gmail.com>"
 
+import ast
+from ast import Call, Load, Name, copy_location
+
+nameAddOn = 'SYMPYSL_'
+
+class BinOp2Function(ast.NodeTransformer):
+    def visit_BinOp(self, node):
+        inside = False
+        for rc in self.rowsCols:
+            if node.left.lineno <= rc[0] <= node.right.lineno and \
+               node.left.col_offset < rc[1] < node.right.col_offset:
+                inside=True
+            
+        if inside:
+            return copy_location(
+                      Call(func=Name(self.funcName, Load(),lineno=node.lineno,col_offset=node.col_offset),
+                           args=[node.left, node.right],
+                           keywords=[],
+                           lineno=node.lineno,
+                           col_offset=node.col_offset),
+                      node)
+        else:
+            return node
+
+def GetOperatorRowCol(s,names):
+    rowCol = {}
+    for name in names:
+        rowCol[name] = []
+    for row,p in enumerate(s.split('\n')):
+        for name in names:
+            while p.find(nameAddOn+name+'_') != -1:
+                col = p.find(nameAddOn+name+'_')
+                rowCol[name].append([row+1,p.find(nameAddOn+name+'_')])
+                p = p.replace(nameAddOn+name+'_','+',1)
+    return rowCol
+
+def ASTWithConversion(s):
+    names = operator_names
+    rowCol = GetOperatorRowCol(s,names)
+    for name in names:
+        s = s.replace(nameAddOn+name+'_','+')
+    mod=ast.parse(s)
+    bo2f=BinOp2Function()
+    for name in names:
+        bo2f.funcName = '__'+name+'__'
+        bo2f.rowsCols=rowCol[name]
+        mod = bo2f.visit(mod)
+    return mod
+
 # Symbol conversions from ascii to greek
 
 ESC_SYMBOL = unichr(0x0022ee).encode('utf-8')
@@ -23,11 +72,12 @@ allSymbols = greek + GREEK
 greek_names = ['alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta', 'eta', 'theta', 'iota', 'kappa', 'lambda', 'mu', 'nu', 'xi', 'omicron', 'pi', 'rho', 'sigma', 'tau', 'upsilon', 'phi', 'chi', 'psi', 'omega']
 GREEK_names = ['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon', 'Zeta', 'Eta', 'Theta', 'Iota', 'Kappa', 'Lambda', 'Mu', 'Nu', 'Xi', 'Omicron', 'Pi', 'Rho', 'Sigma', 'Tau', 'Upsilon', 'Phi', 'Chi', 'Psi', 'Omega']
 
-allNames = greek_names + GREEK_names
-allExpandedAsciiNames = ['SYMPYSL_'+i+'_' for i in allNames]
-
 operators = [unichr(i).encode('utf-8') for i in [0x000b7,0x02a2f]]
 operator_names = ['dot', 'cross']
+expandedOperatorAsciiNames = [nameAddOn + i + '_' for i in operator_names]
+
+allNames = greek_names + GREEK_names + operator_names
+allExpandedAsciiNames = [nameAddOn + i + '_' for i in allNames]
 
 n2o = dict([[operator_names[i],operators[i]] for i in range(len(operators))])
 o2n = dict([[operators[i],operator_names[i]] for i in range(len(operators))])

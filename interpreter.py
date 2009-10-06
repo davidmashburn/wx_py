@@ -1,6 +1,7 @@
 """Interpreter executes Python commands."""
 
-__author__ = "Patrick K. O'Brien <pobrien@orbtech.com>"
+__author__ = "Patrick K. O'Brien <pobrien@orbtech.com> / "
+__author__ += "David N. Mashburn <david.n.mashburn@gmail.com>"
 __cvsid__ = "$Id: interpreter.py 44235 2007-01-17 23:05:14Z RD $"
 __revision__ = "$Revision: 44235 $"[11:-2]
 
@@ -47,7 +48,7 @@ class Interpreter(InteractiveInterpreter):
         self.startupScript = None
         
 
-    def push(self, command):
+    def push(self, command, astMod=None):
         """Send command to the interpreter to be executed.
         
         Because this may be called recursively, we append a new list
@@ -56,7 +57,7 @@ class Interpreter(InteractiveInterpreter):
         command we keep appending the pieces to the last list in
         commandBuffer until we have a complete command. If not, we
         delete that last list."""
-
+        
         # In case the command is unicode try encoding it
         if type(command) == unicode:
             try:
@@ -70,7 +71,14 @@ class Interpreter(InteractiveInterpreter):
         if not self.more: self.commandBuffer.append([])
         self.commandBuffer[-1].append(command)
         source = '\n'.join(self.commandBuffer[-1])
-        more = self.more = self.runsource(source)
+        
+        # If an ast code module is passed, pass it to runModule instead
+        more=False
+        if astMod != None:
+            self.runModule(astMod)
+            self.more=False
+        else:
+            more = self.more = self.runsource(source)
         dispatcher.send(signal='Interpreter.push', sender=self,
                         command=command, more=more, source=source)
         return more
@@ -92,6 +100,23 @@ class Interpreter(InteractiveInterpreter):
             sys.stderr = stderr
         return more
         
+    def runModule(self, mod):
+        """Compile and run an ast module in the interpreter."""
+        stdin, stdout, stderr = sys.stdin, sys.stdout, sys.stderr
+        sys.stdin, sys.stdout, sys.stderr = \
+                   self.stdin, self.stdout, self.stderr
+        self.runcode(compile(mod,'','exec'))
+        # If sys.std* is still what we set it to, then restore it.
+        # But, if the executed source changed sys.std*, assume it was
+        # meant to be changed and leave it. Power to the people.
+        if sys.stdin == self.stdin:
+            sys.stdin = stdin
+        if sys.stdout == self.stdout:
+            sys.stdout = stdout
+        if sys.stderr == self.stderr:
+            sys.stderr = stderr
+        return False
+    
     def getAutoCompleteKeys(self):
         """Return list of auto-completion keycodes."""
         return [ord('.')]

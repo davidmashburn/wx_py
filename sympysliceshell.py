@@ -838,15 +838,16 @@ class SlicesShell(editwindow.EditWindow):
             self.exit()
         self.interp.push("import sympy\n")
         self.interp.push("import numpy\n")
-        self.interp.push("""class Infix:
-    def __init__(self, function):
-        self.function = function
-    def __ror__(self, other):
-        return Infix(lambda x, self=self, other=other: self.function(other, x))
-    def __or__(self, other):
-        return self.function(other)
-    def __call__(self, value1, value2):
-        return self.function(value1, value2)\n""")
+        
+        #self.interp.push("""class Infix:
+    #def __init__(self, function):
+    #    self.function = function
+    #def __ror__(self, other):
+        #return Infix(lambda x, self=self, other=other: self.function(other, x))
+    #def __or__(self, other):
+        #return self.function(other)
+    #def __call__(self, value1, value2):
+        #return self.function(value1, value2)\n""")
         
         outStart+=[0]
         outEnd+=[self.GetLineCount()-2]
@@ -2426,7 +2427,18 @@ class SlicesShell(editwindow.EditWindow):
             else:
                 newCommand=i
             
-            self.more = self.interp.push(newCommand)
+            hasSpecialOperators = False
+            for i in symbolConversion.expandedOperatorAsciiNames:
+                if i in newCommand:
+                    hasSpecialOperators = True
+                    break
+            if hasSpecialOperators:
+                astMod=symbolConversion.ASTWithConversion(newCommand)
+                import ast
+                ast.dump(astMod)
+            else:
+                astMod=None
+            self.more = self.interp.push(newCommand, astMod)
             # (the \n stops many things from bouncing at the interpreter)
             # I could do the following, but I don't really like it!
             #if useMultiCommand:
