@@ -2413,17 +2413,20 @@ class SlicesShell(editwindow.EditWindow):
         # Special syntax to force automatic symbol creation... Hooray!
         for i in commands:
             if i.strip()!='':
-                newCommand = symbolConversion.FormatUnicodeForPythonInterpreter(i)
-                newCommand = newCommand.replace('\n','\n        ') # space everything out more...
-                newCommand = """while SYMPYSLICES_done==False:\n""" + \
-                            """     SYMPYSLICES_done=True\n""" + \
-                            """     try:\n""" + \
-                            """         """ + newCommand + """\n""" + \
-                            """     except NameError as ne:\n""" + \
-                            """         name=ne.args[0].split("'")[1]\n""" + \
-                            """         exec(name+'=sympy.Symbol("'+name+'")')\n""" + \
-                            """         SYMPYSLICES_done=False\n"""
-                self.interp.push("SYMPYSLICES_done=False\n")
+                if i.strip()[0]!='#':
+                    newCommand = symbolConversion.FormatUnicodeForPythonInterpreter(i)
+                    newCommand = newCommand.replace('\n','\n        ') # space everything out more...
+                    newCommand = """while SYMPYSLICES_done==False:\n""" + \
+                                """     SYMPYSLICES_done=True\n""" + \
+                                """     try:\n""" + \
+                                """         """ + newCommand + """\n""" + \
+                                """     except NameError as ne:\n""" + \
+                                """         name=ne.args[0].split("'")[1]\n""" + \
+                                """         exec(name+'=sympy.Symbol("'+name+'")')\n""" + \
+                                """         SYMPYSLICES_done=False\n"""
+                    self.interp.push("SYMPYSLICES_done=False\n")
+                else:
+                    newCommand=i
             else:
                 newCommand=i
             
@@ -2438,6 +2441,7 @@ class SlicesShell(editwindow.EditWindow):
                 ast.dump(astMod)
             else:
                 astMod=None
+            
             self.more = self.interp.push(newCommand, astMod)
             # (the \n stops many things from bouncing at the interpreter)
             # I could do the following, but I don't really like it!
