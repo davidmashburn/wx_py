@@ -426,7 +426,7 @@ class SlicesShellFrame(frame.Frame, frame.ShellFrameMixin):
         result = editor.saveSingle(title='Save SymPySlices File',directory=filedir,
                                    wildcard='SymPySlices Files (*.sympyslices)|*.sympyslices')
         if result.path!='':
-            if result.path[-9:]!=".sympyslices":
+            if result.path[-12:]!=".sympyslices":
                 result.path+=".sympyslices"
         if result.path:
             self.buffer.doc = document.Document(result.path)
