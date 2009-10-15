@@ -22,6 +22,7 @@ nameAddOn = 'SYMPYSL_'
 
 # Dictionary to convert symbols to ast Names, in order of precedence
 precedence2astName = {
+'not' : ast.Not, # special for the not character (unary)
 'or' : ast.Or,
 'and': ast.And,
 '==' : ast.Eq,
@@ -29,7 +30,7 @@ precedence2astName = {
 '^'  : ast.BitXor,
 '&'  : ast.BitAnd,
 '<<' : ast.RShift,
-'+'  : ast.Add,
+'+'  : ast.Add, # Can also be unary...
 '*'  : ast.Mult,
 '**' : ast.Pow
 }
@@ -178,14 +179,14 @@ char2name = { 'a' : 'alpha', 'b' : 'beta',    'c' : 'chi',
               'y' : 'psi',   'z' : 'zeta' }
 
 CHAR2name = { 'A' : 'Alpha', 'B' : 'Beta',    'C' : 'Chi',
-                 'D' : 'Delta', 'E' : 'Epsilon', 'F' : 'Phi',
-                 'G' : 'Gamma', 'H' : 'Eta',     'I' : 'Iota',
-                 'J' : 'Phi',   'K' : 'Kappa',   'L' : 'Lambda',
-                 'M' : 'Mu',    'N' : 'Nu',      'O' : 'Omicron',
-                 'P' : 'Pi',    'Q' : 'Theta',   'R' : 'Rho',
-                 'S' : 'Sigma', 'T' : 'Tau',     'U' : 'Upsilon',
-                 'V' : 'Nu',    'W' : 'Omega',   'X' : 'Xi',
-                 'Y' : 'Psi',   'Z' : 'Zeta' }
+              'D' : 'Delta', 'E' : 'Epsilon', 'F' : 'Phi',
+              'G' : 'Gamma', 'H' : 'Eta',     'I' : 'Iota',
+              'J' : 'Phi',   'K' : 'Kappa',   'L' : 'Lambda',
+              'M' : 'Mu',    'N' : 'Nu',      'O' : 'Omicron',
+              'P' : 'Pi',    'Q' : 'Theta',   'R' : 'Rho',
+              'S' : 'Sigma', 'T' : 'Tau',     'U' : 'Upsilon',
+              'V' : 'Nu',    'W' : 'Omega',   'X' : 'Xi',
+              'Y' : 'Psi',   'Z' : 'Zeta' }
 
 # Add the single-character stuff to the name2greek/name2GREEK) dictionaries
 for i in char2name.keys():
@@ -213,17 +214,14 @@ name2GREEK['PS'] = name2GREEK['Psi']
 # Be warned, these will act like greek letters...
 display_only_operators = [unichr(i).encode('utf-8') for i in
     [0x00a1, 0x220e, 0x221f, 0x2220, 0x2221, 0x2222, 0x2234, 0x2235,
-     0x2236, 0x2237, 0x223f, 0x2248, 0x2249, 0x225d, 0x225f, 0x00a2,
-     0x00a3, 0x00a4, 0x00a5, 0x00a6, 0x00a9, 0x00ac, 0x00ae, 0x00af,
-     0x00b0, 0x00bf]]
+     0x2236, 0x2237, 0x223f, 0x00a2, 0x00a3, 0x00a4, 0x00a5, 0x00a6,
+     0x00a9, 0x00ae, 0x00af, 0x00b0, 0x00bf]]
 display_only_operator_names = ['upsidedownexclamation','endofproof',
                                'rightangle','angle','measuredangle',
                                'sphericalangle','therefore','because',
                                'ratio','proportion','sinewave',
-                               'almostequal','notalmostequal',
-                               'definedequal','questionequal',
                                'cents','pounds','currency','yen',
-                               'brokenbar','copyright','not',
+                               'brokenbar','copyright',
                                'restricted','macron','degree',
                                'upsidedownquestion'
                               ]
@@ -238,10 +236,6 @@ display_only_operator2name = dict([
                                   ])
 
 n2doo = name2display_only_operator
-n2doo['~~']   = n2doo['almostequal']
-n2doo['!~~']  = n2doo['notalmostequal']
-n2doo['def='] = n2doo['definedequal']
-n2doo['?=']   = n2doo['questionequal']
 n2doo['deg']  = n2doo['degree']
 del n2doo
 
@@ -320,17 +314,18 @@ n2po['4rt']  = n2po['fourthroot']
 n2po['int']  = n2po['integral']
 del n2po
 
-# ----- 8: Binary Operators that need the special operator to function conversion -----
+# ----- 8: Binary (and Unary) Operators that need the special operator to function conversion -----
 infix_binary_operators = [unichr(i).encode('utf-8') for i in 
-    [0x00b1, 0x00f7, 0x2213, 0x2214, 0x2212, 0x2200, 0x2215,
+    [0x00ac, 0x00b1, 0x00f7, 0x2213, 0x2214, 0x2212, 0x2200, 0x2215,
      0x2216, 0x2208, 0x2209, 0x220a, 0x220b, 0x220c, 0x220d, 0x2217,
      0x2218, 0x2219, 0x221d, 0x2223, 0x2224, 0x2225, 0x2226, 0x2227,
-     0x2228, 0x2229, 0x222a, 0x2261, 0x2262, 0x2263, 0x226a, 0x226b, 
-     0x2282, 0x2283, 0x2284, 0x2285, 0x2295, 0x2296, 0x2297, 0x2298, 
-     0x2299, 0x229a, 0x229b, 0x229c, 0x229d, 0x229e, 0x229f, 0x22a0, 
-     0x22a1, 0x22c4, 0x22c5, 0x22c6, 0x2a2f]]
+     0x2228, 0x2229, 0x222a, 0x2248, 0x2249, 0x225d, 0x225f, 0x2261,
+     0x2262, 0x2263, 0x226a, 0x226b, 0x2282, 0x2283, 0x2284, 0x2285,
+     0x2295, 0x2296, 0x2297, 0x2298, 0x2299, 0x229a, 0x229b, 0x229c,
+     0x229d, 0x229e, 0x229f, 0x22a0, 0x22a1, 0x22c4, 0x22c5, 0x22c6,
+     0x2a2f]]
 
-infix_binary_operator_names = ['plusminus','divisionsign','minusplus',
+infix_binary_operator_names = ['not','plusminus','divisionsign','minusplus',
                                'dotplus','operatorminus','forall',
                                'divideoperator','setminus','elementof',
                                'notelementof','smallelementof','contains',
@@ -339,6 +334,8 @@ infix_binary_operator_names = ['plusminus','divisionsign','minusplus',
                                'proportional','divides','doesnotdivide',
                                'parallel','notparallel','logicaland',
                                'logicalor','intersection','union',
+                               'almostequal','notalmostequal',
+                               'definedequal','questionequal',
                                'identicalto','notidenticalto',
                                'strictlyequivalentto','muchless',
                                'muchgreater','subset','superset',
@@ -365,6 +362,10 @@ n2ibo['-+'] = n2ibo['minusplus']
 n2ibo['.+'] = n2ibo['dotplus']
 n2ibo['prop'] = n2ibo['proportional']
 n2ibo['para'] = n2ibo['parallel']
+n2ibo['~~']   = n2ibo['almostequal']
+n2ibo['!~~']  = n2ibo['notalmostequal']
+n2ibo['def='] = n2ibo['definedequal']
+n2ibo['?=']   = n2ibo['questionequal']
 n2ibo['==='] = n2ibo['identicalto']
 n2ibo['!==='] = n2ibo['notidenticalto']
 n2ibo['===='] = n2ibo['strictlyequivalentto']
@@ -385,6 +386,7 @@ n2ibo['.'] = n2ibo['dot'] # Don't use middledot anymore...
 del n2ibo
 
 infix_binary_operator_name2precedence_symbol = {
+'not'                   : 'not',
 'plusminus'             : '+',
 'divisionsign'          : '*',
 'minusplus'             : '+',
@@ -411,6 +413,10 @@ infix_binary_operator_name2precedence_symbol = {
 'logicalor'             : 'or',
 'intersection'          : 'and',
 'union'                 : 'or',
+'almostequal'           : '==',
+'notalmostequal'        : '==',
+'definedequal'          : '==',
+'questionequal'         : '==',
 'identicalto'           : '==',
 'notidenticalto'        : '==',
 'strictlyequivalentto'  : '==',
