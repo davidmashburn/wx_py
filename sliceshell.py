@@ -29,7 +29,7 @@ from pseudo import PseudoFileOut
 from pseudo import PseudoFileErr
 from version import VERSION
 from magic import magic
-from path import ls,cd,pwd
+from path import ls,cd,pwd,sx
 
 
 sys.ps3 = '<-- '  # Input prompt.
@@ -929,6 +929,7 @@ class SlicesShell(editwindow.EditWindow):
         __builtin__.cd = cd
         __builtin__.ls = ls
         __builtin__.pwd = pwd
+        __builtin__.sx = sx
 
 
     def quit(self):

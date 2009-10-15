@@ -81,14 +81,15 @@ def GetOperatorRowCol(s,names):
             while p.find(nameAddOn+name+'_') != -1:
                 col = p.find(nameAddOn+name+'_')
                 rowCol[name].append([row+1,p.find(nameAddOn+name+'_')])
-                p = p.replace(nameAddOn+name+'_',n2precedence[name],1) # Take old ones out of the mix...
+                p = p.replace(nameAddOn+name+'_',
+                    infix_binary_operator_name2precedence_symbol[name],1) # Take old ones out of the mix...
     return rowCol
 
 def ASTWithConversion(s):
-    names = operator_names
+    names = infix_binary_operator_names
     rowCol = GetOperatorRowCol(s,names)
     for name in names:
-        s = s.replace(nameAddOn+name+'_',n2precedence[name])
+        s = s.replace(nameAddOn+name+'_',infix_binary_operator_name2precedence_symbol[name])
     print s
     mod=ast.parse(s,mode='single')
     borcc = BinOpRowColCollector()
@@ -119,7 +120,7 @@ def ASTWithConversion(s):
     bo2f=BinOp2Function()
     for name in names:
         bo2f.funcName = '__'+name+'__'
-        bo2f.astOp = precedence2astName[n2precedence[name]]
+        bo2f.astOp = precedence2astName[infix_binary_operator_name2precedence[name]]
         bo2f.coords=coords[name]
         mod = bo2f.visit(mod)
     return mod
@@ -214,7 +215,7 @@ display_only_operators = [unichr(i).encode('utf-8') for i in
     [0x00a1, 0x220e, 0x221f, 0x2220, 0x2221, 0x2222, 0x2234, 0x2235,
      0x2236, 0x2237, 0x223f, 0x2248, 0x2249, 0x225d, 0x225f, 0x00a2,
      0x00a3, 0x00a4, 0x00a5, 0x00a6, 0x00a9, 0x00ac, 0x00ae, 0x00af,
-     0x00b0, 0x00b2, 0x00b3, 0x00bf]]
+     0x00b0, 0x00bf]]
 display_only_operator_names = ['upsidedownexclamation','endofproof',
                                'rightangle','angle','measuredangle',
                                'sphericalangle','therefore','because',
@@ -224,7 +225,7 @@ display_only_operator_names = ['upsidedownexclamation','endofproof',
                                'cents','pounds','currency','yen',
                                'brokenbar','copyright','not',
                                'restricted','macron','degree',
-                               'squared','cubed','upsidedownquestion'
+                               'upsidedownquestion'
                               ]
 
 name2display_only_operator = dict([
@@ -242,8 +243,6 @@ n2doo['!~~']  = n2doo['notalmostequal']
 n2doo['def='] = n2doo['definedequal']
 n2doo['?=']   = n2doo['questionequal']
 n2doo['deg']  = n2doo['degree']
-n2doo['^2']   = n2doo['squared']
-n2doo['^3']   = n2doo['cubed']
 del n2doo
 
 # ---- 5: Mathematical Symbols (Converts like greek) -----
@@ -264,25 +263,27 @@ name2math_symbol['inf'] = name2math_symbol['infinity']
 
 # ----- 6: Binary operators that support simple unicode to ascii conversion -----
 # (all these are simple equality operators)
-ez_binary_operators = [unichr(i).encode('utf-8') for i in [0x2260, 0x2264, 0x2265]]
-ez_binary_operator_names = ['notequal','lessthanequal','greaterthanequal']
+ez_operators = [unichr(i).encode('utf-8') for i in [0x2260, 0x2264, 0x2265, 0x00b2, 0x00b3]]
+ez_operator_names = ['notequal','lessthanequal','greaterthanequal','squared','cubed']
 
-name2ez_binary_operator = dict([
-                    [ez_binary_operator_names[i],ez_binary_operators[i]]
-                    for i in range(len(ez_binary_operators))
+name2ez_operator = dict([
+                    [ez_operator_names[i],ez_operators[i]]
+                    for i in range(len(ez_operators))
                                ])
-ez_binary_operator2name = dict([
-                    [ez_binary_operators[i],ez_binary_operator_names[i]]
-                    for i in range(len(ez_binary_operators))
+ez_operator2name = dict([
+                    [ez_operators[i],ez_operator_names[i]]
+                    for i in range(len(ez_operators))
                                ])
-ez_binary_operator2interp = dict([
-                               [ez_binary_operators[i],['!=','<=','>='][i]]
-                               for i in range(len(ez_binary_operators))
+ez_operator2interp = dict([
+                               [ez_operators[i],['!=','<=','>=','**2','**3'][i]]
+                               for i in range(len(ez_operators))
                                  ])
 
-name2ez_binary_operator['!='] = name2ez_binary_operator['notequal']
-name2ez_binary_operator['<='] = name2ez_binary_operator['lessthanequal']
-name2ez_binary_operator['>='] = name2ez_binary_operator['greaterthanequal']
+name2ez_operator['!='] = name2ez_operator['notequal']
+name2ez_operator['<='] = name2ez_operator['lessthanequal']
+name2ez_operator['>='] = name2ez_operator['greaterthanequal']
+name2ez_operator['^2'] = name2ez_operator['squared']
+name2ez_operator['^3'] = name2ez_operator['cubed']
 
 # ----- 7: Prefix operators require parentheses like a function -----
 prefix_operators = [unichr(i).encode('utf-8') for i in 
@@ -441,30 +442,29 @@ infix_binary_operator_name2precedence_symbol = {
 # --------------- Define allSymbols and allNames -----------------------
 
 allSymbols = [ESC_SYMBOL] + greek + GREEK + display_only_operators
-allSymbols += math_symbols + ez_binary_operators + prefix_operators
+allSymbols += math_symbols + ez_operators + prefix_operators
 allSymbols += infix_binary_operators
 
 # This is used to convert 
 allNames = greek_names + GREEK_names + display_only_operator_names
-allNames += math_symbol_names + ez_binary_operator_names
+allNames += math_symbol_names + ez_operator_names
 allNames += prefix_operator_names + infix_binary_operator_names
 
 allExpandedAsciiNames = [nameAddOn + i + '_' for i in allNames]
 expandedInfixOperatorAsciiNames = [nameAddOn + i + '_' for i in infix_binary_operator_names]
 
-infix_binary_operator2precedence = {}
+infix_binary_operator_name2precedence = {}
 
-for i in infix_binary_operators:
-    infix_binary_operator2precedence[i] = \
-                       infix_binary_operator_name2precedence_symbol[
-                                          infix_binary_operator2name[i]]
+for i in infix_binary_operator_names:
+    infix_binary_operator_name2precedence[i] = \
+                       infix_binary_operator_name2precedence_symbol[i]
 
 # ----------- Define Functions to convert characters and strings ---------
 
 # Attempts to use the dictionaries above to convert ascii shorthand into a unicode character
 def Ascii2Unicode(ascStr):
     for d in [name2greek, name2GREEK, name2display_only_operator,
-              name2math_symbol, name2ez_binary_operator,
+              name2math_symbol, name2ez_operator,
               name2prefix_operator, name2infix_binary_operator]:
         if ascStr in d.keys():
             return d[ascStr]
@@ -478,7 +478,7 @@ def Unicode2Ascii(uniChar):
         return uniChar
     
     for d in [greek2name, GREEK2name, display_only_operator2name,
-              math_symbol2name, ez_binary_operator2name,
+              math_symbol2name, ez_operator2name,
               prefix_operator2name, infix_binary_operator2name]:
         if uniChar in d.keys():
             return d[uniChar]
@@ -488,7 +488,7 @@ def Unicode2Ascii(uniChar):
     return hex(ord(uniChar))
 
 def Unicode2Ascii_Interp(uniChar):
-    for d in [ez_binary_operator2interp, math_symbol2interp]:
+    for d in [ez_operator2interp, math_symbol2interp]:
         if uniChar in d.keys():
             return d[uniChar]
     # No need to handle cases... check first before calling!
@@ -497,7 +497,7 @@ def FormatUnicodeForSave(s): # s is a unicode string
     s = s.encode('utf-8')
     
     for d in [greek2name, GREEK2name, display_only_operator2name,
-              math_symbol2name, ez_binary_operator2name,
+              math_symbol2name, ez_operator2name,
               prefix_operator2name, infix_binary_operator2name]:
         for i in d.keys():
             if i in s:
@@ -514,7 +514,7 @@ def FormatUnicodeForPythonInterpreter(s): # s is a unicode string
             if i in s:
                 s = s.replace(i,nameAddOn+Unicode2Ascii(i)+'_')
     
-    for d in [math_symbol2interp, ez_binary_operator2interp]:
+    for d in [math_symbol2interp, ez_operator2interp]:
         for i in d.keys():
             if i in s:
                 s = s.replace(i,Unicode2Ascii_Interp(i))
@@ -568,11 +568,11 @@ I know!  Make that the default for anything that can't be id'd
                                                       math_symbol2interp[i]
     
     print '\nEquality Operators:'
-    ez_binary_operator2name, ez_binary_operator2interp
-    for i in ez_binary_operators:
+    ez_operator2name, ez_operator2interp
+    for i in ez_operators:
         print hex(ord(i.decode('utf-8'))),i,'', \
-              unicodedata.name(i.decode('utf-8')),' ',ez_binary_operator2name[i], \
-                                                      ez_binary_operator2interp[i]
+              unicodedata.name(i.decode('utf-8')),' ',ez_operator2name[i], \
+                                                      ez_operator2interp[i]
     
     print '\nPrefix Operators:'
     for i in prefix_operators:

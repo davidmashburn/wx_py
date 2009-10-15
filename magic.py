@@ -8,6 +8,8 @@ __author__ = "David N. Mashburn <david.n.mashburn@gmail.com>"
 
 import keyword
 
+aliasDict = {}
+
 #DNM
 # TODO : Still Refining this... seems to be ok for now... still finding gotchas, though!
 # TODO : Multi-line strings seem to be correctly broken into commands by PyCrust(PySlices)
@@ -22,10 +24,27 @@ def magicSingle(command):
         pass
     elif command[0]=='?': # Do help if starts with ?
         command='help('+command[1:]+')'
+    elif command[0]=='!': # Use os.system if starts with !
+        command='sx("'+command[1:]+'")'
     elif command in ('ls','pwd'): # automatically use ls and pwd with no arguments
         command=command+'()'
     elif command[:3] in ('ls ','cd '): # when using the 'ls ' or 'cd ' constructs, fill in both parentheses and quotes
         command=command[:2]+'("'+command[3:]+'")'
+    elif command[:6] == 'alias ':
+        c = command[6:].split(' ')
+        if len(c)<2:
+            print 'Not enough arguments for alias!'
+            command = ''
+        else:
+            n,v = c[0],' '.join(c[1:])
+            aliasDict[n]=v
+            command = ''
+    elif command.split(' ')[0] in aliasDict.keys():
+        c = command.split(' ')
+        if len(c)<2:
+            command = 'sx("'+aliasDict[c[0]]+'")'
+        else:
+            command = 'sx("'+aliasDict[c[0]]+' '+' '.join(c[1:])+'")'
     elif first_space!=-1:       # if there is at least one space, add parentheses at beginning and end
         cmds=command.split(' ')
         if len(cmds)>1:

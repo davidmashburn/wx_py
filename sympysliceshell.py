@@ -29,7 +29,7 @@ from pseudo import PseudoFileOut
 from pseudo import PseudoFileErr
 from version import VERSION
 from magic import magic
-from path import ls,cd,pwd
+from path import ls,cd,pwd,sx
 
 import symbolConversion
 from symbolConversion import ESC_SYMBOL
@@ -837,6 +837,7 @@ class SlicesShell(editwindow.EditWindow):
             print 'Sympy must be installed to use SymPySlices!'
             self.exit()
         self.interp.push("import sympy\n")
+        self.interp.push("sp = sympy.pretty_print\n")
         self.interp.push("import numpy\n")
         
         #self.interp.push("""class Infix:
@@ -973,6 +974,7 @@ class SlicesShell(editwindow.EditWindow):
         __builtin__.cd = cd
         __builtin__.ls = ls
         __builtin__.pwd = pwd
+        __builtin__.sx = sx
 
 
     def quit(self):
