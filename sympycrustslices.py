@@ -118,7 +118,7 @@ class CrustSlicesFrame(crustslices.CrustSlicesFrame):
                  *args, **kwds):
         """Create CrustFrame instance."""
         frame.Frame.__init__(self, parent, id, title, pos, size, style,
-                             shellName='PySlices')
+                             shellName='SymPySlices')
         frame.ShellFrameMixin.__init__(self, config, dataDir)
         
         if size == wx.DefaultSize:

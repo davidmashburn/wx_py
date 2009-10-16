@@ -164,7 +164,7 @@ class Frame(wx.Frame):
             m.Append(ID_SHOWTOOLS,
                      'Show &Tools\tF4',
                      'Show the filling and other tools', wx.ITEM_CHECK)
-        if self.shellName=='PySlices':
+        if self.shellName==['PySlices','SymPySlices']:
             m.Append(ID_HIDEFOLDINGMARGIN,
                                 '&Hide Folding Margin',
                                 'Hide Folding Margin', wx.ITEM_CHECK)
@@ -210,14 +210,14 @@ class Frame(wx.Frame):
         self.startupMenu.Append(ID_EDITSTARTUPSCRIPT,
                                 '&Edit Startup Script...',
                                 'Edit Startup Script')
-        if self.shellName=='PySlices':
+        if self.shellName in ['PySlices','SymPySlices']:
             self.startupMenu.Append(ID_SHOWPYSLICESTUTORIAL,
                                 '&Show PySlices Tutorial',
                                 'Show PySlices Tutorial', wx.ITEM_CHECK)
         m.AppendMenu(ID_STARTUP, '&Startup', self.startupMenu, 'Startup Options')
 
         self.settingsMenu = wx.Menu()
-        if self.shellName=='PySlices':
+        if self.shellName in ['PySlices','SymPySlices']:
             self.settingsMenu.Append(ID_ENABLESHELLMODE,
                                 '&Enable Shell Mode',
                                 'Enable Shell Mode', wx.ITEM_CHECK)

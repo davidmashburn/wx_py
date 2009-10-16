@@ -249,9 +249,9 @@ name2math_symbol = dict([ [math_symbol_names[i],math_symbols[i]]
 math_symbol2name = dict([ [math_symbols[i],math_symbol_names[i]]
                           for i in range(len(math_symbols))
                         ])
-math_symbol2interp = dict([ [math_symbols[i],['sets.Set([])','sympy.oo'][i]]
-                             for i in range(len(math_symbols))
-                          ])
+#math_symbol2interp = dict([ [math_symbols[i],['sets.Set([])','sympy.oo'][i]]
+#                             for i in range(len(math_symbols))
+#                          ])
 
 name2math_symbol['inf'] = name2math_symbol['infinity']
 
@@ -357,6 +357,8 @@ infix_binary_operator2name = dict([
                                   ])
 
 n2ibo = name2infix_binary_operator
+n2ibo['/'] = n2ibo['divisionsign']
+n2ibo['frac'] = n2ibo['divisionsign']
 n2ibo['+-'] = n2ibo['plusminus']
 n2ibo['-+'] = n2ibo['minusplus']
 n2ibo['.+'] = n2ibo['dotplus']
@@ -494,7 +496,7 @@ def Unicode2Ascii(uniChar):
     return hex(ord(uniChar))
 
 def Unicode2Ascii_Interp(uniChar):
-    for d in [ez_operator2interp, math_symbol2interp]:
+    for d in [ez_operator2interp]:
         if uniChar in d.keys():
             return d[uniChar]
     # No need to handle cases... check first before calling!
@@ -515,12 +517,12 @@ def FormatUnicodeForPythonInterpreter(s): # s is a unicode string
     s = s.encode('utf-8')
     
     for d in [greek2name, GREEK2name, display_only_operator2name,
-              infix_binary_operator2name]:
+              math_symbol2name, infix_binary_operator2name]:
         for i in d.keys():
             if i in s:
                 s = s.replace(i,nameAddOn+Unicode2Ascii(i)+'_')
     
-    for d in [math_symbol2interp, ez_operator2interp]:
+    for d in [ez_operator2interp]:
         for i in d.keys():
             if i in s:
                 s = s.replace(i,Unicode2Ascii_Interp(i))

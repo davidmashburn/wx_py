@@ -171,7 +171,7 @@ class SlicesShellFrame(frame.Frame, frame.ShellFrameMixin):
                  config=None, dataDir=None, filename=None,
                  *args, **kwds):
         """Create SlicesShellFrame instance."""
-        frame.Frame.__init__(self, parent, id, title, pos, size, style,shellName='PySlices')
+        frame.Frame.__init__(self, parent, id, title, pos, size, style,shellName='SymPySlices')
         frame.ShellFrameMixin.__init__(self, config, dataDir)
         
         if size == wx.DefaultSize:
@@ -836,8 +836,13 @@ class SlicesShell(editwindow.EditWindow):
         except ImportError:
             print 'Sympy must be installed to use SymPySlices!'
             self.exit()
+        self.interp.push("from __future__ import division \n")
         self.interp.push("import sympy\n")
         self.interp.push("sp = sympy.pretty_print\n")
+        self.interp.push("SYMPYSL_infinity_ = sympy.oo")
+        self.interp.push("SYMPYSL_pi_ = sympy.pi")
+        self.interp.push("__divisionsign__ = sympy.Rational")
+        
         self.interp.push("import numpy\n")
         
         #self.interp.push("""class Infix:
