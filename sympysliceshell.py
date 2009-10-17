@@ -2424,14 +2424,22 @@ class SlicesShell(editwindow.EditWindow):
                     newCommand = symbolConversion.FormatUnicodeForPythonInterpreter(i)
                     newCommand = newCommand.replace('\n','\n        ') # space everything out more...
                     newCommand = """while SYMPYSLICES_done==False:\n""" + \
-                                """     SYMPYSLICES_done=True\n""" + \
-                                """     try:\n""" + \
-                                """         """ + newCommand + """\n""" + \
-                                """     except NameError as ne:\n""" + \
-                                """         name=ne.args[0].split("'")[1]\n""" + \
-                                """         exec(name+'=sympy.Symbol("'+name+'")')\n""" + \
-                                """         SYMPYSLICES_done=False\n"""
+                                 """    if SYMPYSLICES_oldNames[1]==None or SYMPYSLICES_oldNames[0] != SYMPYSLICES_oldNames[1]:\n""" + \
+                                 """        SYMPYSLICES_done=True\n""" + \
+                                 """        try:\n""" + \
+                                 """            """ + newCommand + """\n""" + \
+                                 """        except NameError as ne:\n""" + \
+                                 """            name=ne.args[0].split("'")[1]\n""" + \
+                                 """            exec(name+'=sympy.Symbol("'+name+'")')\n""" + \
+                                 """            SYMPYSLICES_done=False\n""" + \
+                                 """            if SYMPYSLICES_oldNames[1] == None:\n""" + \
+                                 """                SYMPYSLICES_oldNames = None, name\n""" + \
+                                 """            else:\n""" + \
+                                 """                SYMPYSLICES_oldNames = SYMPYSLICES_oldNames[1], name\n""" + \
+                                 """    else:\n""" + \
+                                 """        """ + newCommand + """\n"""
                     self.interp.push("SYMPYSLICES_done=False\n")
+                    self.interp.push("SYMPYSLICES_oldNames = None, None\n")
                 else:
                     newCommand=i
             else:
