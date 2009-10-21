@@ -138,14 +138,30 @@ will automatically insert the Greek letter theta!
 
 In SymPySlices, these unicode characters can also be used as valid python!
 
-Right now only Greek characters are supported, but many others could be
-added in the future!  It is also possible (theoretically) to add operator support.
+A limited number of symbols and operators are supported not, but many others could be
+added in the future!  Operator support uses an "infix-to-prefix" conversion
+using the python module ast.
 
 In total, typing this below:
 <ESC>theta<ESC> = 2
 <ESC>theta<ESC> + <ESC>phi<ESC>
 
 Should result in 2 + \xcf\x86!
+
+Typing <ESC>integral<ESC>(x**2,x)
+
+Results in __integral__(x**2, x)
+
+Also, typing a<ESC>dot<ESC>b below:
+
+Should result in __dot__(a,b)!
+
+It is now easy to define this operator by setting __dot__ to something useful like
+"__dot__ = lambda x,y: sum([x[i]*y[i] for i in range(len(x))])"
+or
+"__dot__ = numpy.dot"
+
+This operator feature is VERY EXPERIMENTAL but could be really useful!
 
 Saving and opening "sessions" is now supported!  This is a little
 different to other shells where the history is saved.  With PySlices and
@@ -185,6 +201,7 @@ class SlicesShellFrame(frame.Frame, frame.ShellFrameMixin):
                                execStartupScript=self.execStartupScript,
                                showPySlicesTutorial=self.showPySlicesTutorial,
                                enableShellMode=self.enableShellMode,
+                               enableAutoSympy=self.enableAutoSympy,
                                hideFoldingMargin=self.hideFoldingMargin,
                                *args, **kwds)
         self.buffer = self.sliceshell.buffer
@@ -260,6 +277,11 @@ class SlicesShellFrame(frame.Frame, frame.ShellFrameMixin):
         """Change between Slices Mode and Shell Mode"""
         frame.Frame.OnEnableShellMode(self,event)
         self.sliceshell.ToggleShellMode(self.enableShellMode)
+    
+    def OnEnableAutoSympy(self,event):
+        """Use Automatic Conversion of Undefined Variables To Sympy Symbols"""
+        frame.Frame.OnEnableAutoSympy(self,event)
+        self.sliceshell.ToggleAutoSympy(self.enableAutoSympy)
     
     def OnHideFoldingMargin(self,event):
         """Change between Slices Mode and Shell Mode"""
@@ -598,6 +620,7 @@ class SlicesShell(editwindow.EditWindow):
                  introText='', locals=None, InterpClass=None,
                  startupScript=None, execStartupScript=True,
                  showPySlicesTutorial=True,enableShellMode=False,
+                 enableAutoSympy=True,
                  hideFoldingMargin=False, *args, **kwds):
         """Create Shell instance."""
         editwindow.EditWindow.__init__(self, parent, id, pos, size, style)
@@ -707,6 +730,8 @@ class SlicesShell(editwindow.EditWindow):
             else:
                 self.mode='SlicesMode'
             
+            self.enableAutoSympy = enableAutoSympy
+            
             self.execOnNextReturn=False
             if self.mode=='SlicesMode':
                 self.MarkerDefine(INPUT_START,        stc.STC_MARK_BOXMINUS,
@@ -809,10 +834,10 @@ class SlicesShell(editwindow.EditWindow):
             self.write(tutorialText,'Output')
             tutStart=5
             testStart=17
-            symTestStart=56
-            outStart=[tutStart,testStart+3,symTestStart+1]
-            outEnd=[tutStart-1,testStart-1,symTestStart-1]
-            inStart=[testStart,symTestStart]
+            symTestStart=57
+            outStart=[tutStart,testStart+3,symTestStart+1,symTestStart+5,symTestStart+9]
+            outEnd=[tutStart-1,testStart-1,symTestStart-1,symTestStart+3,symTestStart+7]
+            inStart=[testStart,symTestStart,symTestStart+4,symTestStart+8]
             inMiddle=[testStart+1]
             inEnd=[testStart+2]
         
@@ -925,6 +950,12 @@ class SlicesShell(editwindow.EditWindow):
                               input_color, "white")
             self.MarkerDefine(INPUT_END,             stc.STC_MARK_DOTDOTDOT,
                               input_color, "white")
+    
+    def ToggleAutoSympy(self,enableAutoSympy=None):
+        if enableAutoSympy==None:
+            self.enableAutoSympy = not self.enableAutoSympy
+        else:
+            self.enableAutoSympy = enableAutoSympy
     
     def ToggleFoldingMargin(self,hideFoldingMargin=None):
         if hideFoldingMargin==None:
@@ -2422,24 +2453,29 @@ class SlicesShell(editwindow.EditWindow):
             if i.strip()!='':
                 if i.strip()[0]!='#':
                     newCommand = symbolConversion.FormatUnicodeForPythonInterpreter(i)
-                    newCommand = newCommand.replace('\n','\n        ') # space everything out more...
-                    newCommand = """while SYMPYSLICES_done==False:\n""" + \
-                                 """    if SYMPYSLICES_oldNames[1]==None or SYMPYSLICES_oldNames[0] != SYMPYSLICES_oldNames[1]:\n""" + \
-                                 """        SYMPYSLICES_done=True\n""" + \
-                                 """        try:\n""" + \
-                                 """            """ + newCommand + """\n""" + \
-                                 """        except NameError as ne:\n""" + \
-                                 """            name=ne.args[0].split("'")[1]\n""" + \
-                                 """            exec(name+'=sympy.Symbol("'+name+'")')\n""" + \
-                                 """            SYMPYSLICES_done=False\n""" + \
-                                 """            if SYMPYSLICES_oldNames[1] == None:\n""" + \
-                                 """                SYMPYSLICES_oldNames = None, name\n""" + \
-                                 """            else:\n""" + \
-                                 """                SYMPYSLICES_oldNames = SYMPYSLICES_oldNames[1], name\n""" + \
-                                 """    else:\n""" + \
-                                 """        """ + newCommand + """\n"""
-                    self.interp.push("SYMPYSLICES_done=False\n")
-                    self.interp.push("SYMPYSLICES_oldNames = None, None\n")
+                    # This works ... need a menu option to enable, because it's very useful,
+                    # But also very annoying if you're model building...
+                    if self.enableAutoSympy: # Use auto-sympy conversion for NameErrors
+                        newCommand = newCommand.replace('\n','\n            ') # space everything out more...
+                        newCommand = """while SYMPYSLICES_done==False:\n""" + \
+                                     """    if SYMPYSLICES_oldNames[1]==None or SYMPYSLICES_oldNames[0] != SYMPYSLICES_oldNames[1]:\n""" + \
+                                     """        SYMPYSLICES_done=True\n""" + \
+                                     """        try:\n""" + \
+                                     """            """ + newCommand + """\n""" + \
+                                     """        except NameError as ne:\n""" + \
+                                     """            name=ne.args[0].split("'")[1]\n""" + \
+                                     """            exec(name+'=sympy.Symbol("'+name+'")')\n""" + \
+                                     """            SYMPYSLICES_done=False\n""" + \
+                                     """            if SYMPYSLICES_oldNames[1] == None:\n""" + \
+                                     """                SYMPYSLICES_oldNames = None, name\n""" + \
+                                     """            else:\n""" + \
+                                     """                SYMPYSLICES_oldNames = SYMPYSLICES_oldNames[1], name\n""" + \
+                                     """    else:\n""" + \
+                                     """        """ + newCommand + """\n"""
+                        self.interp.push("SYMPYSLICES_done=False\n")
+                        self.interp.push("SYMPYSLICES_oldNames = None, None\n")
+                    else:
+                        newCommand += '\n'
                 else:
                     newCommand=i
             else:

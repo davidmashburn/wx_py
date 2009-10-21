@@ -2,7 +2,7 @@
 
 __author__ = "David N. Mashburn <david.n.mashburn@gmail.com> / "
 __author__ += "Patrick K. O'Brien <pobrien@orbtech.com>"
-__cvsid__ = "$Id: crust.py 44235 2007-01-17 23:05:14Z RD $"
+__cvsid__ = "$Id: crustslices.py 44235 2007-01-17 23:05:14Z RD $"
 __revision__ = "$Revision: 44235 $"[11:-2]
 
 import wx

@@ -2,7 +2,7 @@
 
 __author__ = "David N. Mashburn <david.n.mashburn@gmail.com> / "
 __author__ += "Patrick K. O'Brien <pobrien@orbtech.com>"
-__cvsid__ = "$Id: crust.py 44235 2007-01-17 23:05:14Z RD $"
+__cvsid__ = "$Id: sympycrustslices.py 44235 2007-01-17 23:05:14Z RD $"
 __revision__ = "$Revision: 44235 $"[11:-2]
 
 import wx
@@ -38,8 +38,8 @@ class CrustSlices(crustslices.CrustSlices):
                  InterpClass=None,
                  startupScript=None, execStartupScript=True,
                  showPySlicesTutorial=True,
-                 enableShellMode=False, hideFoldingMargin=False,
-                 *args, **kwds):
+                 enableShellMode=False, enableAutoSympy=True,
+                 hideFoldingMargin=False, *args, **kwds):
         """Create CrustSlices instance."""
         wx.SplitterWindow.__init__(self, parent, id, pos, size, style, name)
 
@@ -56,6 +56,7 @@ class CrustSlices(crustslices.CrustSlices):
                                  execStartupScript=execStartupScript,
                                  showPySlicesTutorial=showPySlicesTutorial,
                                  enableShellMode=enableShellMode,
+                                 enableAutoSympy=enableAutoSympy,
                                  hideFoldingMargin=hideFoldingMargin,
                                  *args, **kwds)
         
@@ -137,6 +138,7 @@ class CrustSlicesFrame(crustslices.CrustSlicesFrame):
                                  execStartupScript=self.execStartupScript,
                                  showPySlicesTutorial=self.showPySlicesTutorial,
                                  enableShellMode=self.enableShellMode,
+                                 enableAutoSympy=self.enableAutoSympy,
                                  hideFoldingMargin=self.hideFoldingMargin,
                                  *args, **kwds)
         self.sliceshell = self.crust.sliceshell
@@ -172,6 +174,11 @@ class CrustSlicesFrame(crustslices.CrustSlicesFrame):
                                   wx.OK | wx.ICON_INFORMATION)
         dialog.ShowModal()
         dialog.Destroy()
+    
+    def OnEnableAutoSympy(self,event):
+        """Use Automatic Conversion of Undefined Variables To Sympy Symbols"""
+        frame.Frame.OnEnableAutoSympy(self,event)
+        self.sliceshell.ToggleAutoSympy(self.enableAutoSympy)
 
     def bufferOpen(self,file=None):
         """Open file in buffer."""

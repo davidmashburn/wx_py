@@ -43,6 +43,7 @@ ID_WRAP = wx.NewId()
 ID_TOGGLE_MAXIMIZE = wx.NewId()
 ID_SHOW_LINENUMBERS = wx.NewId()
 ID_ENABLESHELLMODE = wx.NewId()
+ID_ENABLEAUTOSYMPY = wx.NewId()
 ID_AUTO_SAVESETTINGS = wx.NewId()
 ID_SAVEHISTORY = wx.NewId()
 ID_SAVEHISTORYNOW = wx.NewId()
@@ -221,6 +222,10 @@ class Frame(wx.Frame):
             self.settingsMenu.Append(ID_ENABLESHELLMODE,
                                 '&Enable Shell Mode',
                                 'Enable Shell Mode', wx.ITEM_CHECK)
+        if self.shellName == 'SymPySlices':
+            self.settingsMenu.Append(ID_ENABLEAUTOSYMPY,
+                                '&Enable "Auto-Sympy" Conversions for Undefined Variables',
+                                'Enable "Auto-Sympy" Conversions', wx.ITEM_CHECK)
         self.settingsMenu.Append(ID_AUTO_SAVESETTINGS,
                                  '&Auto Save Settings',
                                  'Automatically save settings on close', wx.ITEM_CHECK)
@@ -276,6 +281,7 @@ class Frame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.OnToggleMaximize, id=ID_TOGGLE_MAXIMIZE)
         self.Bind(wx.EVT_MENU, self.OnShowLineNumbers, id=ID_SHOW_LINENUMBERS)
         self.Bind(wx.EVT_MENU, self.OnEnableShellMode, id=ID_ENABLESHELLMODE)
+        self.Bind(wx.EVT_MENU, self.OnEnableAutoSympy, id=ID_ENABLEAUTOSYMPY)
         self.Bind(wx.EVT_MENU, self.OnAutoSaveSettings, id=ID_AUTO_SAVESETTINGS)
         self.Bind(wx.EVT_MENU, self.OnSaveHistory, id=ID_SAVEHISTORY)
         self.Bind(wx.EVT_MENU, self.OnSaveHistoryNow, id=ID_SAVEHISTORYNOW)
@@ -317,6 +323,7 @@ class Frame(wx.Frame):
         self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateMenu, id=ID_WRAP)
         self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateMenu, id=ID_SHOW_LINENUMBERS)
         self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateMenu, id=ID_ENABLESHELLMODE)
+        self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateMenu, id=ID_ENABLEAUTOSYMPY)
         self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateMenu, id=ID_AUTO_SAVESETTINGS)
         self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateMenu, id=ID_SAVESETTINGS)
         self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateMenu, id=ID_DELSETTINGSFILE)
@@ -482,6 +489,9 @@ class Frame(wx.Frame):
     def OnEnableShellMode(self, event):
         self.enableShellMode = event.IsChecked()
     
+    def OnEnableAutoSympy(self, event):
+        self.enableAutoSympy = event.IsChecked()
+    
     def OnHideFoldingMargin(self, event):
         self.hideFoldingMargin = event.IsChecked()
     
@@ -612,6 +622,9 @@ class Frame(wx.Frame):
             elif id == ID_ENABLESHELLMODE:
                 event.Check(self.enableShellMode)
                 event.Enable(self.config is not None)
+            elif id == ID_ENABLEAUTOSYMPY:
+                event.Check(self.enableAutoSympy)
+                event.Enable(self.config is not None)
             elif id == ID_AUTO_SAVESETTINGS:
                 event.Check(self.autoSaveSettings)
                 event.Enable(self.config is not None)
@@ -726,6 +739,7 @@ class ShellFrameMixin:
         self.execStartupScript = True
         self.showPySlicesTutorial = True
         self.enableShellMode = False
+        self.enableAutoSympy = True
         self.hideFoldingMargin = False
         if self.config:
             self.execStartupScript = \
@@ -733,7 +747,9 @@ class ShellFrameMixin:
             self.showPySlicesTutorial = \
                  self.config.ReadBool('Options/ShowPySlicesTutorial', True)
             self.enableShellMode = \
-                 self.config.ReadBool('Options/EnableShellMode', True)
+                 self.config.ReadBool('Options/EnableShellMode', False)
+            self.enableAutoSympy = \
+                 self.config.ReadBool('Options/EnableAutoSympy', True)
             self.hideFoldingMargin = \
                  self.config.ReadBool('Options/HideFoldingMargin', True)
     
@@ -766,8 +782,13 @@ class ShellFrameMixin:
                  self.config.ReadBool('Options/ShowPySlicesTutorial', True)
             self.enableShellMode = \
                  self.config.ReadBool('Options/EnableShellMode', False)
+            self.enableAutoSympy = \
+                 self.config.ReadBool('Options/EnableAutoSympy', True)
             self.hideFoldingMargin = \
                  self.config.ReadBool('Options/HideFoldingMargin', True)
+            
+            print self.enableAutoSympy
+            print self.enableShellMode
             
             self.LoadHistory()
 
@@ -787,6 +808,8 @@ class ShellFrameMixin:
                                       self.showPySlicesTutorial)
                 self.config.WriteBool('Options/EnableShellMode',
                                       self.enableShellMode)
+                self.config.WriteBool('Options/EnableAutoSympy',
+                                      self.enableAutoSympy)
                 self.config.WriteBool('Options/HideFoldingMargin',
                                       self.hideFoldingMargin)
             if self.autoSaveHistory:
