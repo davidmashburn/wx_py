@@ -3706,7 +3706,7 @@ class SlicesShell(editwindow.EditWindow):
                 fid.write(outputStartText.replace('\n',os.linesep))
                 addComment=True
             if addComment: fid.write('#')
-            convText = symbolConversion.FormatUnicodeForPythonInterpreter(
+            convText = symbolConversion.FormatUnicodeForSave(
                                                         self.GetLine(i)  ) 
             fid.write(convText.replace('\n',os.linesep))
     
