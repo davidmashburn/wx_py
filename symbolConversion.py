@@ -41,8 +41,8 @@ class BinOpRowColCollector(ast.NodeVisitor):
     
     def visit_BinOp(self, node):
         self.generic_visit(node)
-        self.rowsCols .append([ [node.left.lineno, node.left.col_offset],
-                                [node.right.lineno,node.right.col_offset] ])
+        self.rowsCols.append([ [node.left.lineno, node.left.col_offset],
+                               [node.right.lineno,node.right.col_offset] ])
 
 class BinOp2Function(ast.NodeTransformer):
     def __init__(self):
@@ -52,26 +52,29 @@ class BinOp2Function(ast.NodeTransformer):
     def visit_BinOp(self, node):
         self.generic_visit(node)
         
-        print node.op,node.left.col_offset,node.right.col_offset
-        print node.left.lineno, node.left.col_offset,node.right.lineno,node.right.col_offset
-        for c in self.coords:
-            if node.left.lineno == c[0][0] and \
-               node.left.col_offset == c[0][1] and \
-               node.right.lineno == c[1][0] and \
-               node.right.col_offset == c[1][1]:
-                if self.astOp != type(node.op):
-                    print 'Parsing Error!!'
-                print 'DONE!'
-                return copy_location(Call(
-                           func=Name(self.funcName, Load(),lineno=node.lineno,
-                                     col_offset=node.col_offset),
-                           args=[node.left, node.right],
-                           keywords=[],
-                           lineno=node.lineno,
-                           col_offset=node.col_offset),
-                       node)
-        else:
-            return node
+        #print 'What is this??',node, '\nop', node.op,'\n',dir(node),'\nr',node.right,node.col_offset,node.lineno
+        #print node.op,node.left.col_offset,node.right.col_offset
+        #print node.left.lineno, node.left.col_offset,node.right.lineno,node.right.col_offset
+        if self.coords != []:
+            for c in self.coords:
+                if len(c)!=0:
+                    if node.left.lineno == c[0][0] and \
+                       node.left.col_offset == c[0][1] and \
+                       node.right.lineno == c[1][0] and \
+                       node.right.col_offset == c[1][1]:
+                        if self.astOp != type(node.op):
+                            print 'Parsing Error!!'
+                        print 'DONE!'
+                        return copy_location(Call(
+                                   func=Name(self.funcName, Load(),lineno=node.lineno,
+                                             col_offset=node.col_offset),
+                                   args=[node.left, node.right],
+                                   keywords=[],
+                                   lineno=node.lineno,
+                                   col_offset=node.col_offset),
+                               node)
+        # If nothing changed, return as is...
+        return node
 
 def GetOperatorRowCol(s,names):
     rowCol = {}
@@ -120,10 +123,11 @@ def ASTWithConversion(s):
     print coords
     bo2f=BinOp2Function()
     for name in names:
-        bo2f.funcName = '__'+name+'__'
-        bo2f.astOp = precedence2astName[infix_binary_operator_name2precedence[name]]
-        bo2f.coords=coords[name]
-        mod = bo2f.visit(mod)
+        if len(coords[name])>0:
+            bo2f.funcName = '__'+name+'__'
+            bo2f.astOp = precedence2astName[infix_binary_operator_name2precedence[name]]
+            bo2f.coords=coords[name]
+            mod = bo2f.visit(mod)
     return mod
 
 # -------------------------Unicode Conversion Dictionaries -------------------------
