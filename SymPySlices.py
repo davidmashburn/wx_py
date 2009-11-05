@@ -4,7 +4,7 @@
 # The next two lines, and the other code below that makes use of
 # ``__main__`` and ``original``, serve the purpose of cleaning up the
 # main namespace to look as much as possible like the regular Python
-# shell environment.
+# shell environ ment.
 import __main__
 original = __main__.__dict__.keys()
 
@@ -28,7 +28,7 @@ class App(wx.App):
     def OnInit(self):
         import os
         import wx
-        from myPyCrust import sympycrustslices
+        from newPyCrust import sympycrustslices
         from wx import py
         
         self.SetAppName("sympyslices")

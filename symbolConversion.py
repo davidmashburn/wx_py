@@ -6,7 +6,7 @@ __author__ = "David N. Mashburn <david.n.mashburn@gmail.com>"
 import ast
 from ast import Call, Load, Name, copy_location
 import unicodedata
-from myPyCrust.symbolConversionData import *
+from newPyCrust.symbolConversionData import *
 
 # Strategy for conversion of Binary Operators to functions...
 # 1 -- Replace the unicode character with one or another binary operator
