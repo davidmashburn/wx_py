@@ -3074,7 +3074,8 @@ class SlicesShell(editwindow.EditWindow):
         """Display auto-completion popup list."""
         self.AutoCompSetAutoHide(self.autoCompleteAutoHide)
         self.AutoCompSetIgnoreCase(self.autoCompleteCaseInsensitive)
-        list = self.interp.getAutoCompleteList(command,
+        list = self.interp.getAutoCompleteList(
+                    symbolConversion.FormatUnicodeForPythonInterpreter(command),
                     includeMagic=self.autoCompleteIncludeMagic,
                     includeSingle=self.autoCompleteIncludeSingle,
                     includeDouble=self.autoCompleteIncludeDouble)
@@ -3087,7 +3088,8 @@ class SlicesShell(editwindow.EditWindow):
         """Display argument spec and docstring in a popup window."""
         if self.CallTipActive():
             self.CallTipCancel()
-        (name, argspec, tip) = self.interp.getCallTip(command)
+        (name, argspec, tip) = self.interp.getCallTip(
+               symbolConversion.FormatUnicodeForPythonInterpreter(command))
         if tip:
             dispatcher.send(signal='SlicesShell.calltip', sender=self, calltip=tip)
         if not self.autoCallTip and not forceCallTip:
