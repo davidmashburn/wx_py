@@ -28,7 +28,7 @@ from pseudo import PseudoFileIn
 from pseudo import PseudoFileOut
 from pseudo import PseudoFileErr
 from version import VERSION
-from magic import magic
+from magic import magic,testForStringContinuation
 from path import ls,cd,pwd,sx
 
 
@@ -974,6 +974,10 @@ class SlicesShell(editwindow.EditWindow):
         text = self.lstripPrompt(text)
         text = text.replace(os.linesep, '\n')
         lines = text.split('\n')
+        
+        isNotStringContinuation = testForStringContinuation(text)
+        print 'insc',not isNotStringContinuation
+        
         commands = []
         command = ''
         for line in lines:
@@ -1000,7 +1004,7 @@ class SlicesShell(editwindow.EditWindow):
             # or previous line had a line continuation \
             if line.strip() == '' or lstrip != line or \
                first_word in ['else','elif','except','finally'] or \
-               continuation:
+               continuation or not isNotStringContinuation.pop(0):
                 # Multiline command. Add to the command.
                 command += '\n'
                 command += line
@@ -2343,6 +2347,8 @@ class SlicesShell(editwindow.EditWindow):
         busy = wx.BusyCursor()
         self.waiting = True
         self.lastUpdate=None
+        
+        print commands
         for i in commands:
             self.more = self.interp.push(i+'\n')
             # (the \n stops many things from bouncing at the interpreter)

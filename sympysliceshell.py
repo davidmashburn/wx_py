@@ -1055,6 +1055,9 @@ class SlicesShell(editwindow.EditWindow):
         text = self.lstripPrompt(text)
         text = text.replace(os.linesep, '\n')
         lines = text.split('\n')
+        
+        isNotStringContinuation = testForStringContinuation(text)
+        
         commands = []
         command = ''
         for line in lines:
@@ -1081,7 +1084,7 @@ class SlicesShell(editwindow.EditWindow):
             # or previous line had a line continuation \
             if line.strip() == '' or lstrip != line or \
                first_word in ['else','elif','except','finally'] or \
-               continuation:
+               continuation or not isNotStringContinuation:
                 # Multiline command. Add to the command.
                 command += '\n'
                 command += line

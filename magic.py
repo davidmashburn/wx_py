@@ -7,8 +7,24 @@ __author__ = "David N. Mashburn <david.n.mashburn@gmail.com>"
 # 07/01/2009
 
 import keyword
+import re
 
 aliasDict = {}
+
+def testForStringContinuation(codeBlock):
+    currentMark=None
+    markList=[]
+    for i in codeBlock.split('\n'):
+        result = re.findall('"""|"|\'|\'\'\'|\\"|\\\'|\\"\\"\\"',i)
+        markList.append(currentMark==None)
+        for j in result:
+            if currentMark==None:
+                currentMark=j
+            elif currentMark==j:
+                currentMark=None
+    # Now markList is line by line key for magic
+    # telling it whether or not each line is part of a string continuation
+    return markList
 
 #DNM
 # TODO : Still Refining this... seems to be ok for now... still finding gotchas, though!
@@ -31,7 +47,7 @@ def magicSingle(command):
     elif command[:3] in ('ls ','cd '): # when using the 'ls ' or 'cd ' constructs, fill in both parentheses and quotes
         command=command[:2]+'("'+command[3:]+'")'
     elif command[:6] == 'alias ':
-        c = command[6:].split(' ')
+        c = command[6:].lstrip().split(' ')
         if len(c)<2:
             print 'Not enough arguments for alias!'
             command = ''
@@ -64,7 +80,13 @@ def magicSingle(command):
     return command
 
 def magic(command):
+    markList=testForStringContinuation(command)
+    
     commandList=[]
     for i in command.split('\n'):
-        commandList.append(magicSingle(i))
+        if markList.pop(0)==None:
+            commandList.append(magicSingle(i))
+        else:
+            commandList.append(i)
+    
     return '\n'.join(commandList)
