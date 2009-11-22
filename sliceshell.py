@@ -976,7 +976,6 @@ class SlicesShell(editwindow.EditWindow):
         lines = text.split('\n')
         
         isNotStringContinuation = testForStringContinuation(text)
-        print 'insc',not isNotStringContinuation
         
         commands = []
         command = ''

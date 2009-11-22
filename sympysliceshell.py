@@ -28,7 +28,7 @@ from pseudo import PseudoFileIn
 from pseudo import PseudoFileOut
 from pseudo import PseudoFileErr
 from version import VERSION
-from magic import magic
+from magic import magic,testForStringContinuation
 from path import ls,cd,pwd,sx
 
 import symbolConversion
@@ -1084,7 +1084,7 @@ class SlicesShell(editwindow.EditWindow):
             # or previous line had a line continuation \
             if line.strip() == '' or lstrip != line or \
                first_word in ['else','elif','except','finally'] or \
-               continuation or not isNotStringContinuation:
+               continuation or not isNotStringContinuation.pop(0):
                 # Multiline command. Add to the command.
                 command += '\n'
                 command += line
@@ -2459,7 +2459,14 @@ class SlicesShell(editwindow.EditWindow):
                     # This works ... need a menu option to enable, because it's very useful,
                     # But also very annoying if you're model building...
                     if self.enableAutoSympy: # Use auto-sympy conversion for NameErrors
-                        newCommand = newCommand.replace('\n','\n            ') # space everything out more...
+                        isNotStringContinuation = testForStringContinuation(newCommand)
+                        newCommand = newCommand.split('\n')
+                        for i,b in enumerate(isNotStringContinuation):
+                            if b and i>0:
+                                newCommand[i] = '            '+newCommand[i]
+                        newCommand='\n'.join(newCommand)
+                        #newCommand = newCommand.replace('\n','\n            ') # space everything out more...
+                        
                         newCommand = """while SYMPYSLICES_done==False:\n""" + \
                                      """    if SYMPYSLICES_oldNames[1]==None or SYMPYSLICES_oldNames[0] != SYMPYSLICES_oldNames[1]:\n""" + \
                                      """        SYMPYSLICES_done=True\n""" + \
@@ -2475,6 +2482,7 @@ class SlicesShell(editwindow.EditWindow):
                                      """                SYMPYSLICES_oldNames = SYMPYSLICES_oldNames[1], name\n""" + \
                                      """    else:\n""" + \
                                      """        """ + newCommand + """\n"""
+                        print newCommand
                         self.interp.push("SYMPYSLICES_done=False\n")
                         self.interp.push("SYMPYSLICES_oldNames = None, None\n")
                     else:
