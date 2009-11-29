@@ -84,7 +84,7 @@ def magic(command):
     
     commandList=[]
     for i in command.split('\n'):
-        if markList.pop(0)==None:
+        if markList.pop(0)==True:
             commandList.append(magicSingle(i))
         else:
             commandList.append(i)

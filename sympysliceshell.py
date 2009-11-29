@@ -2440,6 +2440,7 @@ class SlicesShell(editwindow.EditWindow):
         # TODO : Is there a good reason not to include magic?
         if USE_MAGIC:
             command=magic(command)
+            print command
         
         # Allows multi-component commands...
         if useMultiCommand:
