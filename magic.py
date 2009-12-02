@@ -15,10 +15,12 @@ def testForStringContinuation(codeBlock):
     currentMark=None
     markList=[]
     for i in codeBlock.split('\n'):
-        result = re.findall('"""|"|\'|\'\'\'|\\"|\\\'|\\"\\"\\"',i)
+        result = re.findall('"""|"|\'|\'\'\'|\\"|\\\'|\\"\\"\\"|#',i)
         markList.append(currentMark==None)
         for j in result:
             if currentMark==None:
+                if j=='#': # If it is a legitimate comment, ignore everything after
+                    break
                 currentMark=j
             elif currentMark==j:
                 currentMark=None
