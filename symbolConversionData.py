@@ -441,29 +441,32 @@ name2ez_operator_Num = {
 'cubed' : 0x00b3
 }
 
-
-
 ez_operators = [unichr(i).encode('utf-8') for i in name2ez_operator_Num.values()]
 ez_operator_names = name2ez_operator_Num.keys()
 
 name2ez_operator = dict([
                     [ez_operator_names[i],ez_operators[i]]
                     for i in range(len(ez_operators))
-                               ])
+                        ])
 ez_operator2name = dict([
                     [ez_operators[i],ez_operator_names[i]]
                     for i in range(len(ez_operators))
-                               ])
-ez_operator2interp = dict([
-                               [ez_operators[i],['!=','<=','>=','**2','**3'][i]]
-                               for i in range(len(ez_operators))
-                                 ])
+                        ])
+
+ez_operator2interp = dict()
+ez_operator2interp[name2ez_operator['notequal']] = '!='
+ez_operator2interp[name2ez_operator['lessthanequal']] = '<='
+ez_operator2interp[name2ez_operator['greaterthanequal']] = '>='
+ez_operator2interp[name2ez_operator['squared']] = '**2'
+ez_operator2interp[name2ez_operator['cubed']] = '**3'
 
 name2ez_operator['!='] = name2ez_operator['notequal']
 name2ez_operator['<='] = name2ez_operator['lessthanequal']
 name2ez_operator['>='] = name2ez_operator['greaterthanequal']
 name2ez_operator['^2'] = name2ez_operator['squared']
 name2ez_operator['^3'] = name2ez_operator['cubed']
+name2ez_operator['**2'] = name2ez_operator['squared']
+name2ez_operator['**3'] = name2ez_operator['cubed']
 
 # ----- 7: Prefix operators require parentheses like a function -----
 name2prefix_operators_Num = {

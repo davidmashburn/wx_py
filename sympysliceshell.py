@@ -28,7 +28,7 @@ from pseudo import PseudoFileIn
 from pseudo import PseudoFileOut
 from pseudo import PseudoFileErr
 from version import VERSION
-from magic import magic,testForStringContinuation
+from magic import magic,testForStringAndLineContinuation
 from path import ls,cd,pwd,sx
 
 import symbolConversion
@@ -1056,8 +1056,8 @@ class SlicesShell(editwindow.EditWindow):
         text = text.replace(os.linesep, '\n')
         lines = text.split('\n')
         
-        isNotStringContinuation = testForStringContinuation(text)
-        
+        stringContinuationList,lineContinuationList = testForStringAndLineContinuation(text)
+
         commands = []
         command = ''
         for line in lines:
@@ -1072,19 +1072,16 @@ class SlicesShell(editwindow.EditWindow):
                     break
             first_word = ''.join(first_word)
             
-            # check to see if the previous command had a continuation line
-            # won't be able to distinguish commented \'s though...
-            continuation=False
-            if command.strip()!='':
-                if command.strip()[-1]=='\\':
-                    continuation=True
-            
             # Continue the command if it is blank, has indentation,
             # starts with else, elif,except, or finally
             # or previous line had a line continuation \
+            
+            stringCont = stringContinuationList.pop(0)
+            lineCont = lineContinuationList.pop(0)
+            
             if line.strip() == '' or lstrip != line or \
                first_word in ['else','elif','except','finally'] or \
-               continuation or not isNotStringContinuation.pop(0):
+               stringCont or lineCont:
                 # Multiline command. Add to the command.
                 command += '\n'
                 command += line
@@ -2440,7 +2437,6 @@ class SlicesShell(editwindow.EditWindow):
         # TODO : Is there a good reason not to include magic?
         if USE_MAGIC:
             command=magic(command)
-            print command
         
         # Allows multi-component commands...
         if useMultiCommand:
@@ -2460,10 +2456,10 @@ class SlicesShell(editwindow.EditWindow):
                     # This works ... need a menu option to enable, because it's very useful,
                     # But also very annoying if you're model building...
                     if self.enableAutoSympy: # Use auto-sympy conversion for NameErrors
-                        isNotStringContinuation = testForStringContinuation(newCommand)
+                        stringContinuationList,lineContinuationList = testForStringAndLineContinuation(newCommand)
                         newCommand = newCommand.split('\n')
-                        for i,b in enumerate(isNotStringContinuation):
-                            if b and i>0:
+                        for i in range(len(stringContinuationList)):
+                            if not stringContinuationList[i] and i>0:
                                 newCommand[i] = '            '+newCommand[i]
                         newCommand='\n'.join(newCommand)
                         #newCommand = newCommand.replace('\n','\n            ') # space everything out more...
@@ -3597,7 +3593,7 @@ class SlicesShell(editwindow.EditWindow):
         ioStartTypes=[]
         removeComment=False
         
-        # Read the initial three lines that have version and marker information
+        # Read the initial three (or four) lines that have version and marker information
         line=fid.readline()
         if line == usrBinEnvPythonText:
             line=fid.readline() # Add the option to place #!/usr/bin/env python at the top

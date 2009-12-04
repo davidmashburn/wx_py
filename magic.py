@@ -11,22 +11,31 @@ import re
 
 aliasDict = {}
 
-def testForStringContinuation(codeBlock):
+def testForStringAndLineContinuation(codeBlock):
     currentMark=None
-    markList=[]
+    stringContinuationList=[]
+    lineContinuationList=[False] # For \ continuations ... False because cannot start as line Continuation...
     for i in codeBlock.split('\n'):
         result = re.findall('"""|"|\'|\'\'\'|\\"|\\\'|\\"\\"\\"|#',i)
-        markList.append(currentMark==None)
+        stringContinuationList.append(not currentMark==None)
+        commented=False
         for j in result:
             if currentMark==None:
                 if j=='#': # If it is a legitimate comment, ignore everything after
+                    commented=True
                     break
                 currentMark=j
             elif currentMark==j:
                 currentMark=None
-    # Now markList is line by line key for magic
+        
+        lineContinuationList.append(False)
+        if len(i)>0 and not commented:
+            if i[-1]=='\\':
+                lineContinuationList[-1]=True
+                
+    # Now stringContinuationList is line by line key for magic
     # telling it whether or not each line is part of a string continuation
-    return markList
+    return stringContinuationList,lineContinuationList[:-1]
 
 #DNM
 # TODO : Still Refining this... seems to be ok for now... still finding gotchas, though!
@@ -82,11 +91,11 @@ def magicSingle(command):
     return command
 
 def magic(command):
-    markList=testForStringContinuation(command)
+    stringContinuationList,lineContinuationList = testForStringAndLineContinuation(command)
     
     commandList=[]
     for i in command.split('\n'):
-        if markList.pop(0)==True:
+        if stringContinuationList.pop(0)==False:
             commandList.append(magicSingle(i))
         else:
             commandList.append(i)

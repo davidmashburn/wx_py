@@ -787,9 +787,6 @@ class ShellFrameMixin:
             self.hideFoldingMargin = \
                  self.config.ReadBool('Options/HideFoldingMargin', True)
             
-            print self.enableAutoSympy
-            print self.enableShellMode
-            
             self.LoadHistory()
 
 
