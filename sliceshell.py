@@ -987,10 +987,10 @@ class SlicesShell(editwindow.EditWindow):
         
         stringContinuationList,indentationBlockList, \
         lineContinuationList,parentheticalContinuationList = testForContinuations(text)
-
+        
         commands = []
         command = ''
-        for line in lines:
+        for j,line in enumerate(lines):
             lstrip = line.lstrip()
             
             # Get the first alnum word:
@@ -1006,8 +1006,12 @@ class SlicesShell(editwindow.EditWindow):
             # starts with else, elif,except, or finally
             # or previous line had a line continuation \
             
-            stringCont = stringContinuationList.pop(0)
-            lineCont = lineContinuationList.pop(0)
+            if j==0:
+                stringCont = False
+                lineCont=False
+            else:
+                stringCont = stringContinuationList[j-1]
+                lineCont = lineContinuationList[j-1]
             
             if line.strip() == '' or lstrip != line or \
                first_word in ['else','elif','except','finally'] or \
@@ -1599,19 +1603,24 @@ class SlicesShell(editwindow.EditWindow):
             if self.mode=='SlicesMode':
                 doLineBreak=True
             elif self.mode=='ShellMode':
-                if self.execOnNextReturn==False:
+                startLine,endLine = self.GetIOSlice()
+                startpos = self.PositionFromLine(startLine)
+                endpos = self.GetLineEndPosition(endLine)
+                command = self.GetTextRange(startpos, endpos)
+                strCont,indentBlock,lineCont,parenCont = testForContinuations(command)
+                
+                lastLine = command.split('\n')[-1]
+                if lastLine.lstrip()=='': # all whitespace...
+                    stillIndented=False
+                elif lastLine[0]==' ':
+                    stillIndented=True
+                else:
+                    stillIndented=False
+                
+                if strCont[-1] or indentBlock[-1] or lineCont[-1] or parenCont[-1] or stillIndented:
                     doLineBreak=True
-                else: # Now two returns runs the command...
+                else:
                     doSubmitCommand=True
-                    cpos=self.GetCurrentPos()
-                    cline=self.GetCurrentLine()
-                    self.SetSelection(self.PositionFromLine(cline),cpos)
-                    self.ReplaceSelection('')
-                    cpos=self.GetCurrentPos()
-                    if cpos>0:
-                        self.BackspaceWMarkers()
-                        self.SetSelection(cpos,cpos-1)
-                        self.ReplaceSelection('')
         # Enter (Shift/Ctrl + Enter/Return) submits a command to the interpreter.
         # In Shell Mode, hit Return or Enter twice to submit a command
         elif ( key in [wx.WXK_NUMPAD_ENTER,] or
@@ -1623,7 +1632,6 @@ class SlicesShell(editwindow.EditWindow):
                 doLineBreak=True
         
         #Only relevant in ShellMode...
-        self.execOnNextReturn=False
         
         if doLineBreak or doSubmitCommand:
             if self.CallTipActive():
@@ -1639,7 +1647,6 @@ class SlicesShell(editwindow.EditWindow):
             elif doLineBreak:
                 self.insertLineBreak()
                 #Only relevant in ShellMode...
-                self.execOnNextReturn=True
             elif doSubmitCommand:
                 self.DeleteOutputSlicesAfter()
                 self.processLine()
@@ -2845,15 +2852,6 @@ class SlicesShell(editwindow.EditWindow):
             pstrip=previousLine.strip()
             lstrip=previousLine.lstrip()
             
-            # Get the first alnum word:
-            #first_word=[]
-            #for i in pstrip:
-            #    if i.isalnum():
-            #        first_word.append(i)
-            #    else:
-            #        break
-            #first_word = ''.join(first_word)
-            
             if pstrip == '':
                 # because it is all whitespace!
                 indent=previousLine.strip('\n').strip('\r')
@@ -2861,11 +2859,6 @@ class SlicesShell(editwindow.EditWindow):
                 indent=previousLine[:(len(previousLine)-len(lstrip))]
                 if testForContinuations(previousLine)[1][0]:
                     indent+=' '*4
-            
-                #if pstrip[-1]==':' and \
-                #    first_word in ['if','else','elif','for','while',
-                #                   'def','class','try','except','finally']:
-                #    indent+=' '*4
             
             #ADD UNDO
             cpos=self.GetCurrentPos()
@@ -2896,7 +2889,6 @@ class SlicesShell(editwindow.EditWindow):
         try:
             while not reader.input:
                 wx.YieldIfNeeded()
-            
             input = reader.input
         finally:
             start,end = self.GetIOSlice()

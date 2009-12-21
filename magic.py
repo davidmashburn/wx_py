@@ -70,10 +70,18 @@ def magic(command):
     lineContinuationList,parentheticalContinuationList = testForContinuations(command)
     
     commandList=[]
+    firstLine = True
     for i in command.split('\n'):
-        if stringContinuationList.pop(0)==False:
+        if firstLine:
             commandList.append(magicSingle(i))
+        elif stringContinuationList.pop(0)==False and \
+              indentationBlockList.pop(0)==False and \
+              lineContinuationList.pop(0)==False and \
+              parentheticalContinuationList.pop(0)==False:
+            commandList.append(magicSingle(i)) # unless this is in a larger expression, use magic
         else:
             commandList.append(i)
+        
+        firstLine=False
     
     return '\n'.join(commandList)
