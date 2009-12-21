@@ -1396,6 +1396,7 @@ class SlicesShell(editwindow.EditWindow):
         if not self.SliceSelection:
             return
         
+        # collect the line numbers to be deleted...
         selectedSlices=[]
         start,end=None,None
         for i in range(self.GetLineCount()):
@@ -1409,15 +1410,18 @@ class SlicesShell(editwindow.EditWindow):
         if start!=None:
             selectedSlices.append([start,end])
         
+        # Unselect everything
         self.MarginUnselectAll()
         self.SliceSelection=False
         
+        # Going in reverse, delete the selections, fixing the markers as we go...
         for i in range(len(selectedSlices)-1,-1,-1):
             self.SetSelection(self.PositionFromLine(selectedSlices[i][0]),
                               self.GetLineEndPosition(selectedSlices[i][1])+1)
             self.ReplaceSelection('',sliceDeletion=True)
             cur_line=self.GetCurrentLine()
             
+            # If we've made a mess of the grouping markers, clean it up...
             if ((self.MarkerGet(cur_line-1) & 1<<GROUPING_END) and
                (self.MarkerGet(cur_line) & ( 1<<GROUPING_MIDDLE | 1<<GROUPING_END ) )):
                 self.clearGroupingMarkers(cur_line)
@@ -1496,10 +1500,13 @@ class SlicesShell(editwindow.EditWindow):
             # Allow the normal event handling to take place.
             # Use undo wrapper
             cpos=self.GetCurrentPos()
-            s=chr(key)
-            self.UpdateUndoHistoryBefore('insert',s,cpos,cpos+len(s))
-            event.Skip()
-            self.UpdateUndoHistoryAfter()
+            try:
+                s=chr(key)
+                self.UpdateUndoHistoryBefore('insert',s,cpos,cpos+len(s))
+                event.Skip()
+                self.UpdateUndoHistoryAfter()
+            except:
+                event.Skip()
     
     def AutoCompActiveCallback(self):
         numChars=self.GetTextLength()-self.TotalLengthForAutoCompActiveCallback
@@ -1663,7 +1670,7 @@ class SlicesShell(editwindow.EditWindow):
                  and key in (ord('C'), ord('c'), wx.WXK_INSERT):
             self.CopyWithPrompts()
 
-        # Copyself.promptPosEnd to the clipboard, including prefixed prompts.
+        # Copy to the clipboard, including prefixed prompts.
         elif altDown and not controlDown \
                  and key in (ord('C'), ord('c'), wx.WXK_INSERT):
             self.CopyWithPromptsPrefixed()
