@@ -28,7 +28,8 @@ from pseudo import PseudoFileIn
 from pseudo import PseudoFileOut
 from pseudo import PseudoFileErr
 from version import VERSION
-from magic import magic,testForStringAndLineContinuation
+from magic import magic
+from parse import testForContinuations
 from path import ls,cd,pwd,sx
 
 
@@ -984,7 +985,8 @@ class SlicesShell(editwindow.EditWindow):
         text = text.replace(os.linesep, '\n')
         lines = text.split('\n')
         
-        stringContinuationList,lineContinuationList = testForStringAndLineContinuation(text)
+        stringContinuationList,indentationBlockList, \
+        lineContinuationList,parentheticalContinuationList = testForContinuations(text)
 
         commands = []
         command = ''
@@ -1418,7 +1420,11 @@ class SlicesShell(editwindow.EditWindow):
         for i in range(len(selectedSlices)-1,-1,-1):
             self.SetSelection(self.PositionFromLine(selectedSlices[i][0]),
                               self.GetLineEndPosition(selectedSlices[i][1])+1)
+            
+            markerNext = self.MarkerGet(selectedSlices[i][1]+1)
+            
             self.ReplaceSelection('',sliceDeletion=True)
+            
             cur_line=self.GetCurrentLine()
             
             # If we've made a mess of the grouping markers, clean it up...
@@ -1432,8 +1438,15 @@ class SlicesShell(editwindow.EditWindow):
                 self.clearGroupingMarkers(cur_line-1)
                 self.MarkerAdd(cur_line-1,GROUPING_END)
             
-            if i>0:
-                self.UpdateUndoHistoryAfter()
+            if markerNext & 1<<OUTPUT_START:
+                self.clearIOMarkers(cur_line)
+                self.MarkerAdd(cur_line,OUTPUT_START)
+                self.MarkerAdd(cur_line,OUTPUT_BG)
+            elif markerNext & 1<<OUTPUT_START_FOLDED:
+                self.clearIOMarkers(cur_line)
+                self.MarkerAdd(cur_line,OUTPUT_START_FOLDED)
+                self.MarkerAdd(cur_line,OUTPUT_BG)
+        
         return
     
     def OnChar(self, event):
@@ -1767,7 +1780,6 @@ class SlicesShell(editwindow.EditWindow):
         elif key == wx.WXK_BACK:
             if self.SliceSelection:
                 self.SliceSelectionDelete()
-                self.doHistUpdate=True
                 wx.CallAfter(self.RestoreFirstMarker)
             elif selecting and self.CanEdit():
                 self.ReplaceSelection('')
@@ -1792,7 +1804,6 @@ class SlicesShell(editwindow.EditWindow):
         elif key == wx.WXK_DELETE:
             if self.SliceSelection:
                 self.SliceSelectionDelete()
-                self.doHistUpdate=True
                 wx.CallAfter(self.RestoreFirstMarker)
             elif selecting and self.CanEdit():
                 self.ReplaceSelection('')
@@ -2835,23 +2846,27 @@ class SlicesShell(editwindow.EditWindow):
             lstrip=previousLine.lstrip()
             
             # Get the first alnum word:
-            first_word=[]
-            for i in pstrip:
-                if i.isalnum():
-                    first_word.append(i)
-                else:
-                    break
-            first_word = ''.join(first_word)
+            #first_word=[]
+            #for i in pstrip:
+            #    if i.isalnum():
+            #        first_word.append(i)
+            #    else:
+            #        break
+            #first_word = ''.join(first_word)
             
             if pstrip == '':
                 # because it is all whitespace!
                 indent=previousLine.strip('\n').strip('\r')
             else:
                 indent=previousLine[:(len(previousLine)-len(lstrip))]
-                if pstrip[-1]==':' and \
-                    first_word in ['if','else','elif','for','while',
-                                   'def','class','try','except','finally']:
+                if testForContinuations(previousLine)[1][0]:
                     indent+=' '*4
+            
+                #if pstrip[-1]==':' and \
+                #    first_word in ['if','else','elif','for','while',
+                #                   'def','class','try','except','finally']:
+                #    indent+=' '*4
+            
             #ADD UNDO
             cpos=self.GetCurrentPos()
             s=indent
@@ -2868,7 +2883,6 @@ class SlicesShell(editwindow.EditWindow):
         input = ''
         reader = self.reader
         reader.isreading = True
-        import time
         self.prompt()
         
         # Ensure that we get a new line and that it's got an input marker...
@@ -2882,11 +2896,7 @@ class SlicesShell(editwindow.EditWindow):
         try:
             while not reader.input:
                 wx.YieldIfNeeded()
-            #lineGuess = self.GetIOSlice(cLine)[1] + 1
-            #if self.GetCurrentLine() == lineGuess:
-            #    self.clearIOMarkers(lineGuess)
-            #    self.MarkerAdd(lineGuess,OUTPUT_START)
-        
+            
             input = reader.input
         finally:
             start,end = self.GetIOSlice()
