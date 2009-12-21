@@ -2195,6 +2195,10 @@ class SlicesShell(editwindow.EditWindow):
         """Insert a new line break."""
         if not self.CanEdit():
             return
+        elif self.reader.isreading:
+            self.processLine()
+            return
+        
         
         # write with undo wrapper...
         cpos=self.GetCurrentPos()
@@ -2244,7 +2248,8 @@ class SlicesShell(editwindow.EditWindow):
                     command = '\n'
                 self.reader.input = command
                 self.write(os.linesep,'Input')
-                
+                self.MarkerSet(self.GetCurrentLine(),READLINE_BG)
+                self.MarkerSet(self.GetCurrentLine(),INPUT_READLINE)
             else:
                 self.runningSlice = (startline,endline)
                 self.push(command,useMultiCommand=True)
@@ -3248,6 +3253,9 @@ class SlicesShell(editwindow.EditWindow):
         if marker & OUTPUT_MASK:
             return False
         elif marker & INPUT_MASK:
+            if self.reader.isreading and not \
+                    (self.MarkerGet(self.GetCurrentLine()) & 1<<INPUT_READLINE ):
+                return False
             start,end=self.GetIOSlice()
             sliceStartPos=self.PositionFromLine(start)
             sliceEndPos=self.GetLineEndPosition(end)
