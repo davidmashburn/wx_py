@@ -1,0 +1,164 @@
+# With so many values to index, I will have to automatically look for anything of the form SYMPYSL_*_
+#   and then use dictionary indexing to find the result for any reasonable speed
+# See MakeUnicodeDataFile.pyslices for some prototype file tools...
+from newPyCrust.symbolConversionTable import unicodeConversionTable
+import os
+import ast
+#from newPyCrust import symbolConversionNew
+
+nameAddOn = 'SYMPYSL_'
+
+precedence2astName = {
+'not' : ast.Not, # special for the not character (unary)
+'or' : ast.Or,
+'and': ast.And,
+'==' : ast.Eq,
+'|'  : ast.BitOr,
+'^'  : ast.BitXor,
+'&'  : ast.BitAnd,
+'<<' : ast.RShift,
+'+'  : ast.Add, # Can also be unary...
+'*'  : ast.Mult,
+'**' : ast.Pow
+}
+
+testNames=False
+
+allNames = []
+for i in unicodeConversionTable:
+    newNames = [i[1]]+i[2]
+    if testNames:
+        for j in newNames:
+            if j in allNames:
+                print 'Error with alias '+j+' at symbol number '+hex(i[0])
+    allNames += newNames
+
+
+allCatagories = []
+for i in unicodeConversionTable:
+    if i[3] not in allCatagories:
+        allCatagories.append(i[3])
+
+knownCatagories = ['Ascii','SpecialEscapeCharacter','Display',
+                   'SimpleSubstitution', 'Symbol', 'InfixOperator']
+# 'Ascii' (ord<128) is ignored because it is already handled properly by the interpreter...
+# 'SpecialEscapeCharacter' is reserved for the special inputting character
+# 'Display' is able to be saved and viewed, but will not convert to valid code
+# 'Symbol' is the most general catagory: it can be a letter, prefix operator,
+#    or other symbol (like infinity) that can hold either a value or be a function...
+# 'InfixOperator' is a unique catagory for any operator that requires the use of
+#    an ast substitution to work properly.  This type of symbol MUST define
+#    a replacement operator (one of the keys to precedence2astName)
+#    to determine the order of operations.
+#    --- On a side note, I still need to update the ast modifier to allow
+#        equality operators separate from simple binary operators...
+
+# Also, when this file gets finished, one of the functions should be:
+#    ConvertTableToDictionaries.  This will create a file separate (*Data.py)
+#    that can be imported instead of *Table.py to avoid re-processing *Table.py
+#    on every import.
+
+for i in allCatagories:
+    if i not in knownCatagories:
+        print 'Catagory',i,'is an unknown catagory and will not be handled properly...'
+
+##########################################################
+# Divide the table up into catagories...
+##########################################################
+AsciiTable = [i for i in unicodeConversionTable if i[3]=='Ascii']
+SpecialEscapeCharacterTable = [i for i in unicodeConversionTable if i[3]=='SpecialEscapeCharacter']
+DisplayTable = [i for i in unicodeConversionTable if i[3]=='Display']
+SimpleSubstitutionTable = [i for i in unicodeConversionTable if i[3]=='SimpleSubstitution']
+SymbolTable = [i for i in unicodeConversionTable if i[3]=='Symbol']
+InfixOperatorTable = [i for i in unicodeConversionTable if i[3]=='InfixOperator']
+
+ESC_SYMBOL = unichr(0x0022ee).encode('utf-8')
+nameAddOn = 'SYMPYSL_'
+
+# ##################################################
+# Auto-generate the dictionaries from the tables...
+# ##################################################
+
+# Skip Ascii
+
+if len(SpecialEscapeCharacterTable) > 1:
+    print 'Should only be one escape character!!!'
+
+infixOperatorNames = [i[1] for i in InfixOperatorTable]
+for i in InfixOperatorTable:
+    infixOperatorNames += i[2]
+
+NameToInfixAstSubstitute = dict([ [i[1],i[4]] for i in InfixOperatorTable ])
+for i in InfixOperatorTable:
+    for j in i[2]:
+        NameToInfixAstSubstitute[j] = i[4]
+
+# For conversion before saving
+ToName = dict([ [unichr(i[0]),i[1]] for i in
+  DisplayTable + SimpleSubstitutionTable + SymbolTable + InfixOperatorTable ])
+ToName[unichr(SpecialEscapeCharacterTable[0][0])] = \
+                                       SpecialEscapeCharacterTable[0][1]
+
+# For loading and conversion of output from interpreter
+FromName = dict([ [i[1],unichr(i[0]).encode('utf-8')] for i in
+  DisplayTable + SimpleSubstitutionTable + SymbolTable + InfixOperatorTable ])
+FromName[SpecialEscapeCharacterTable[0][1]] = \
+               unichr(SpecialEscapeCharacterTable[0][0]).encode('utf-8')
+
+for i in DisplayTable+SimpleSubstitutionTable+SymbolTable+InfixOperatorTable:
+    for alias in i[2]:
+        FromName[alias]=FromName[i[1]] # alias points to same thing as the name...
+
+
+# For conversion before passing to interpreter
+ToInterpreter = dict(
+  [[ unichr(i[0]),nameAddOn+i[1]+'_'] for i in SymbolTable+InfixOperatorTable] + \
+  [[ unichr(i[0]),i[4]] for i in SimpleSubstitutionTable]
+                    )
+
+def WriteDicts2File(directory=None):
+    if directory == None:
+        directory = os.getcwd()
+    fid = open(os.path.join(directory,'symbolConversionDicts.py'),'w')
+    
+    fid.write('# This file is autogenerated from the Table...\n')
+    fid.write('# Make modifications to symbolConversionTable.py, then \n')
+    fid.write('#   regenerate this file with symbolConversionDictWriter.py \n')
+    fid.write('\n')
+    
+    # InfixOperatorNames
+    fid.write('infixOperatorNames = ')
+    fid.write(str(infixOperatorNames).replace(', ' , ',\n').replace('[','[\n'))
+    fid.write('\n\n')
+    
+    # NameToInfixAstSubstitute
+    fid.write('NameToInfixAstSubstitute = ')
+    fid.write(str(NameToInfixAstSubstitute).replace(', ' , ',\n').replace('{','{\n'))
+    fid.write('\n\n')
+    
+    # ToName
+    fid.write('ToName = ')
+    fid.write(str(ToName).replace(', ' , ',\n').replace('{','{\n'))
+    fid.write('\n\n')
+    
+    # FromName
+    fid.write('FromName = ')
+    fid.write(str(FromName).replace(', ' , ',\n').replace('{','{\n'))
+    fid.write('\n\n')
+    
+    # ToInterpreter
+    fid.write('ToInterpreter = ')
+    fid.write(str(ToInterpreter).replace(', ' , ',\n').replace('{','{\n'))
+    fid.write('\n\n')
+    
+    fid.close
+
+if __name__ == '__main__':
+    WriteDicts2File()
+
+def QuickTest():
+    # A quick test of the modified parts of the symbolConversionTable:
+    from newPyCrust import symbolConversionTable
+    for i in symbolConversionTable.unicodeConversionTable:
+        if i[2]!=[] or i[3] not in ['Display','Ascii']:
+            print i

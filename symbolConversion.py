@@ -6,7 +6,14 @@ __author__ = "David N. Mashburn <david.n.mashburn@gmail.com>"
 import ast
 from ast import Call, Load, Name, copy_location
 import unicodedata
-from newPyCrust.symbolConversionData import *
+from newPyCrust.symbolConversionDicts import infixOperatorNames, \
+                                             NameToInfixAstSubstitute, \
+                                          ToName, FromName,ToInterpreter
+#from newPyCrust.symbolConversionData import *
+
+nameAddOn = 'SYMPYSL_'
+
+ESC_SYMBOL = unichr(0x0022ee).encode('utf-8')
 
 # Strategy for conversion of Binary Operators to functions...
 # 1 -- Replace the unicode character with one or another binary operator
@@ -84,15 +91,15 @@ def GetOperatorRowCol(s,names):
             while p.find(nameAddOn+name+'_') != -1:
                 col = p.find(nameAddOn+name+'_')
                 rowCol[name].append([row+1,p.find(nameAddOn+name+'_')])
-                p = p.replace(nameAddOn+name+'_',
-                    infix_binary_operator_name2precedence_symbol[name],1) # Take old ones out of the mix...
+                # Take old ones out of the mix...
+                p = p.replace(nameAddOn+name+'_',NameToInfixAstSubstitute[name],1)
     return rowCol
 
 def ASTWithConversion(s):
-    names = infix_binary_operator_names
+    names = infixOperatorNames
     rowCol = GetOperatorRowCol(s,names)
     for name in names:
-        s = s.replace(nameAddOn+name+'_',infix_binary_operator_name2precedence_symbol[name])
+        s = s.replace(nameAddOn+name+'_',NameToInfixAstSubstitute[name])
     print s
     mod=ast.parse(s,mode='single')
     borcc = BinOpRowColCollector()
@@ -124,7 +131,7 @@ def ASTWithConversion(s):
     for name in names:
         if len(coords[name])>0:
             bo2f.funcName = '__'+name+'__'
-            bo2f.astOp = precedence2astName[infix_binary_operator_name2precedence[name]]
+            bo2f.astOp = precedence2astName[NameToInfixAstSubstitute[name]]
             bo2f.coords=coords[name]
             mod = bo2f.visit(mod)
     return mod
@@ -133,139 +140,78 @@ def ASTWithConversion(s):
 
 # Attempts to use the dictionaries in symbolConversionData to convert ascii shorthand into a unicode character
 def Ascii2Unicode(ascStr):
-    for d in [name2greek, name2GREEK, name2display_only_operator,
-              name2math_symbol, name2ez_operator,
-              name2prefix_operator, name2infix_binary_operator]:
-        if ascStr in d.keys():
-            return d[ascStr]
-    # if that didn't work, just return the ascii string back
-    return ascStr
+    try:
+        newStr = FromName[ascStr]
+    except KeyError:
+        newStr = ascStr
+        print "name not found"
+        pass
+    
+    return newStr
 
 # Attempts to use the dictionaries in symbolConversionData to return the ascii name of a unicode character
 def Unicode2Ascii(uniChar):
-    if uniChar == ESC_SYMBOL:
+    if uniChar.encode('utf-8') == ESC_SYMBOL:
         print 'Error!  Unterminated Escape Charater!'
         return uniChar
     
-    for d in [greek2name, GREEK2name, display_only_operator2name,
-              math_symbol2name, ez_operator2name,
-              prefix_operator2name, infix_binary_operator2name]:
-        if uniChar in d.keys():
-            return d[uniChar]
+    try:
+        newStr = ToName[uniChar]
+    except KeyError:
+        newStr = uniChar
+        print "name not found"
+        pass
     
-    # Otherwise, this is an unrecognized char, so return the hex string instead...
-    print 'Error!  Unrecognized Unicode Charater!'
-    return hex(ord(uniChar))
+    return newStr
 
 def Unicode2Ascii_Interp(uniChar):
-    for d in [ez_operator2interp]:
-        if uniChar in d.keys():
-            return d[uniChar]
-    # No need to handle cases... check first before calling!
+    if uniChar.encode('utf-8') == ESC_SYMBOL:
+        print 'Error!  Unterminated Escape Charater!'
+        return uniChar
+    
+    try:
+        newStr = ToInterpreter[uniChar]
+    except KeyError:
+        newStr = uniChar
+        print "name not found"
+        pass
+    
+    return newStr
 
 def FormatUnicodeForSave(s): # s is a unicode string
     s = s.encode('utf-8')
+    s = s.decode('utf-8')
     
-    for d in [greek2name, GREEK2name, display_only_operator2name,
-              math_symbol2name, ez_operator2name,
-              prefix_operator2name, infix_binary_operator2name]:
-        for i in d.keys():
-            if i in s:
-                s = s.replace(i,nameAddOn+Unicode2Ascii(i)+'_')
+    i=0
+    while i<len(s):
+        if ord(s[i])>=128:
+            s = s.replace(s[i],nameAddOn+Unicode2Ascii(s[i])+'_')
+        i+=1
     
     return s.encode('ascii')
 
 def FormatUnicodeForPythonInterpreter(s): # s is a unicode string
     s = s.encode('utf-8')
+    s = s.decode('utf-8')
     
-    for d in [greek2name, GREEK2name, display_only_operator2name,
-              math_symbol2name, infix_binary_operator2name]:
-        for i in d.keys():
-            if i in s:
-                s = s.replace(i,nameAddOn+Unicode2Ascii(i)+'_')
-    
-    for d in [ez_operator2interp]:
-        for i in d.keys():
-            if i in s:
-                s = s.replace(i,Unicode2Ascii_Interp(i))
-
-    for i in prefix_operator2name.keys():
-        if i in s:
-            s = s.replace(i,'__'+Unicode2Ascii(i)+'__')
-    
-    return s.encode('ascii')
-
-def FormatAsciiForDisplay(s): # s is an ascii string
-    for i in allExpandedAsciiNames:
-        if i in s:
-            asciiName = i[len(nameAddOn):-1]
-            s = s.replace(i,Ascii2Unicode(asciiName))
+    i=0
+    while i<len(s):
+        if ord(s[i])>=128:
+            s = s.replace(s[i],Unicode2Ascii_Interp(s[i]))
+        i+=1
     
     return s
-            
-# Print all symbols and symbol names:
-def PrintDocumentation():
-    print """The purpose of this module is to convert from unicode to ascii
-(and vice-versa) whether in SymPySlices or interpreter:
-unicode(0x003B1) <-> SYMPYSL_alpha_
-alternatively, could support wider range of unicode chars with:
-unicode(0x003B1) <-> SYMPYSL_03B1_
-but that is less human readable...
-I know!  Make that the default for anything that can't be id'd
-"""
-    print 'Here is a list of all symbols defined, with their unicode number'
-    print ', unicode name, and corresponding SymPySlices name:'
-    
-    print 'Lowercase Greek Letters:'
-    for i in greek:
-        print hex(ord(i.decode('utf-8'))),i,'', \
-              unicodedata.name(i.decode('utf-8')),' ',greek2name[i]
-    
-    print '\nUppercase Greek Letters:'
-    for i in GREEK:
-        print hex(ord(i.decode('utf-8'))),i,'', \
-              unicodedata.name(i.decode('utf-8')),' ',GREEK2name[i]
-    
-    print '\nCharacters for display only:'
-    for i in display_only_operators:
-        print hex(ord(i.decode('utf-8'))),i,'', \
-              unicodedata.name(i.decode('utf-8')),' ',display_only_operator2name[i]
-    
-    print '\nMath Symbols:'
-    for i in math_symbols:
-        print hex(ord(i.decode('utf-8'))),i,'', \
-              unicodedata.name(i.decode('utf-8')),' ',math_symbol2name[i], \
-                                                      math_symbol2interp[i]
-    
-    print '\nEquality Operators:'
-    ez_operator2name, ez_operator2interp
-    for i in ez_operators:
-        print hex(ord(i.decode('utf-8'))),i,'', \
-              unicodedata.name(i.decode('utf-8')),' ',ez_operator2name[i], \
-                                                      ez_operator2interp[i]
-    
-    print '\nPrefix Operators:'
-    for i in prefix_operators:
-        print hex(ord(i.decode('utf-8'))),i,'', \
-              unicodedata.name(i.decode('utf-8')),' ',prefix_operator2name[i]
-    
-    print '\nInfix Operators:'
-    for i in infix_binary_operators:
-        print hex(ord(i.decode('utf-8'))),i,'', \
-              unicodedata.name(i.decode('utf-8')),' ',infix_binary_operator2name[i]
-    
-# Need to add uppercase dicts, too
-
-# other rather important operators
-# sqrt, inf, e, integral, partial, I, differential, del, dot, cross, !=, <=, >=, +-, -+, <empty square>
-
-# ?? other languages (hebrew, gothic, accent things, ...), other math notations, set notations, etc...
-
-# layout operations (need MathML support):
-# sqrt, matrix, super, sub, under, over, right of, left of, etc...
 
 
-# the other big idea is to use NameError at the interpreter to attempt to resolve
-# badSymbol by running badSymbol=sympy.symbols('badSymbol')
-# but how to determine what symbol name is??
+def FormatAsciiForDisplay(s): # s is an ascii string
+    for i in range(10000): # put a safety maxIterator in...
+        start=s.find(nameAddOn)
+        if start==-1:
+            break
+        end=start+len(nameAddOn)
+        end = s[end:].find('_')+end+1
+        asciiName = s[(start+len(nameAddOn)):(end-1)]
+        s = s.replace(s[start:end],Ascii2Unicode(asciiName))
+    
+    return s
 

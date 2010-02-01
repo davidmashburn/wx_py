@@ -2572,7 +2572,7 @@ class SlicesShell(editwindow.EditWindow):
                 newCommand=i
             
             hasSpecialOperators = False
-            for i in symbolConversion.expandedInfixOperatorAsciiNames:
+            for i in symbolConversion.infixOperatorNames:
                 if i in newCommand:
                     hasSpecialOperators = True
                     break
