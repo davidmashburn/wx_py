@@ -989,8 +989,13 @@ class SlicesShell(editwindow.EditWindow):
         text = text.replace(os.linesep, '\n')
         lines = text.split('\n')
         
-        stringContinuationList,indentationBlockList, \
-        lineContinuationList,parentheticalContinuationList = testForContinuations(text)
+        continuations = testForContinuations(text)
+        
+        if len(continuations)==2: # Error case...
+            return None,continuations[1]
+        elif len(continuations)==4:
+            stringContinuationList,indentationBlockList, \
+            lineContinuationList,parentheticalContinuationList = continuations
         
         commands = []
         command = ''
@@ -1611,7 +1616,7 @@ class SlicesShell(editwindow.EditWindow):
                 startpos = self.PositionFromLine(startLine)
                 endpos = self.GetLineEndPosition(endLine)
                 command = self.GetTextRange(startpos, endpos)
-                strCont,indentBlock,lineCont,parenCont = testForContinuations(command)
+                strCont,indentBlock,lineCont,parenCont = testForContinuations(command,ignoreErrors=True)
                 
                 lastLine = command.split('\n')[-1]
                 if lastLine.lstrip()=='': # all whitespace...
@@ -2304,6 +2309,10 @@ class SlicesShell(editwindow.EditWindow):
         
         self.EmptyUndoBuffer()
         self.NeedsCheckForSave=True
+        if self.hasSyntaxError:
+            pos=self.GetLineEndPosition(self.syntaxErrorRealLine)
+            self.SetCurrentPos(pos)
+            self.SetSelection(pos,pos)
     
     # Not Used!!
     def getMultilineCommand(self, rstrip=True):
@@ -2378,8 +2387,16 @@ class SlicesShell(editwindow.EditWindow):
             command=magic(command)
         
         # Allows multi-component commands...
+        self.hasSyntaxError=False
         if useMultiCommand:
-            commands=self.BreakTextIntoCommands(command)
+            result = self.BreakTextIntoCommands(command)
+            if result[0] == None:
+                commands=[command]
+                self.hasSyntaxError=True
+                syntaxErrorLine=result[1]+1
+                self.syntaxErrorRealLine = self.GetCurrentLine()+result[1]-1
+            else:
+                commands=result
         else:
             commands=[command]
         
@@ -2388,7 +2405,13 @@ class SlicesShell(editwindow.EditWindow):
         self.lastUpdate=None
         
         for i in commands:
-            self.more = self.interp.push(i+'\n')
+            if self.hasSyntaxError:
+                # TODO : NEED TO GET THESE FROM SOMEWHERE!!!
+                lineno=syntaxErrorLine
+                offset=0 # not sure how to easily recover this information...
+                self.write('  File "<input>", line '+str(lineno)+'\n    '+i.split('\n')[lineno-1]+'\n'+' '*offset+'    ^\nSyntaxError: invalid syntax\n','Error')
+            else:
+                self.more = self.interp.push(i+'\n')
             # (the \n stops many things from bouncing at the interpreter)
             # I could do the following, but I don't really like it!
             #if useMultiCommand:
@@ -2861,7 +2884,7 @@ class SlicesShell(editwindow.EditWindow):
                 indent=previousLine.strip('\n').strip('\r')
             else:
                 indent=previousLine[:(len(previousLine)-len(lstrip))]
-                if testForContinuations(previousLine)[1][0]:
+                if testForContinuations(previousLine,ignoreErrors=True)[1][0]:
                     indent+=' '*4
             
             #ADD UNDO
@@ -3386,7 +3409,15 @@ class SlicesShell(editwindow.EditWindow):
         self.SetSelection(startpos, endpos)
         self.ReplaceSelection('')
         
-        for command in self.BreakTextIntoCommands(text):
+        hasSyntaxError=False
+        result = self.BreakTextIntoCommands(command)
+        if result[0] == None:
+            commands=[command]
+            hasSyntaxError=True
+        else:
+            commands=result
+        
+        for command in commands:
             command = command.replace('\n', os.linesep)
             self.write(command)
             self.processLine()

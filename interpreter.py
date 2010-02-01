@@ -46,8 +46,7 @@ class Interpreter(InteractiveInterpreter):
         # List of lists to support recursive push().
         self.commandBuffer = []
         self.startupScript = None
-        
-
+    
     def push(self, command, astMod=None):
         """Send command to the interpreter to be executed.
         
@@ -89,6 +88,11 @@ class Interpreter(InteractiveInterpreter):
         sys.stdin, sys.stdout, sys.stderr = \
                    self.stdin, self.stdout, self.stderr
         more = InteractiveInterpreter.runsource(self, source)
+        # this was a cute idea, but didn't work...
+        #more = self.runcode(compile(source,'',
+        #               ('exec' if self.useExecMode else 'single')))
+        
+        
         # If sys.std* is still what we set it to, then restore it.
         # But, if the executed source changed sys.std*, assume it was
         # meant to be changed and leave it. Power to the people.

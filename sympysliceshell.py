@@ -1070,8 +1070,13 @@ class SlicesShell(editwindow.EditWindow):
         text = text.replace(os.linesep, '\n')
         lines = text.split('\n')
         
-        stringContinuationList,indentationBlockList, \
-        lineContinuationList,parentheticalContinuationList = testForContinuations(text)
+        continuations = testForContinuations(text)
+        
+        if len(continuations)==2: # Error case...
+            return 'Error'
+        elif len(continuations)==4:
+            stringContinuationList,indentationBlockList, \
+            lineContinuationList,parentheticalContinuationList = continuations
         
         commands = []
         command = ''
@@ -2486,8 +2491,14 @@ class SlicesShell(editwindow.EditWindow):
             command=magic(command)
         
         # Allows multi-component commands...
+        useExecMode=False
         if useMultiCommand:
-            commands=self.BreakTextIntoCommands(command)
+            result = self.BreakTextIntoCommands(command)
+            if result == 'Error':
+                commands=[command]
+                useExecMode=True
+            else:
+                commands=result
         else:
             commands=[command]
         
@@ -2503,7 +2514,7 @@ class SlicesShell(editwindow.EditWindow):
                     # This works ... need a menu option to enable, because it's very useful,
                     # But also very annoying if you're model building...
                     if self.enableAutoSympy: # Use auto-sympy conversion for NameErrors
-                        stringContinuationList = testForContinuations(newCommand)[0]
+                        stringContinuationList = testForContinuations(newCommand,ignoreErrors=True)[0]
                         newCommand = newCommand.split('\n')
                         for i in range(len(stringContinuationList)):
                             if i>0:
@@ -3023,7 +3034,7 @@ class SlicesShell(editwindow.EditWindow):
                 indent=previousLine.strip('\n').strip('\r')
             else:
                 indent=previousLine[:(len(previousLine)-len(lstrip))]
-                if testForContinuations(previousLine)[1][0]:
+                if testForContinuations(previousLine,ignoreErrors=True)[1][0]:
                     indent+=' '*4
             
             #ADD UNDO
@@ -3547,7 +3558,15 @@ class SlicesShell(editwindow.EditWindow):
         self.SetSelection(startpos, endpos)
         self.ReplaceSelection('')
         
-        for command in self.BreakTextIntoCommands(text):
+        useExecMode=False
+        result = self.BreakTextIntoCommands(command)
+        if result == 'Error':
+            commands=[command]
+            useExecMode=True
+        else:
+            commands=result
+        
+        for command in commands:
             command = command.replace('\n', os.linesep)
             self.write(command)
             self.processLine()

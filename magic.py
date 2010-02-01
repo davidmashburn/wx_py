@@ -66,8 +66,13 @@ def magicSingle(command):
     return command
 
 def magic(command):
-    stringContinuationList,indentationBlockList, \
-    lineContinuationList,parentheticalContinuationList = testForContinuations(command)
+    continuations = testForContinuations(command)
+    
+    if len(continuations)==2: # Error case...
+        return command
+    elif len(continuations)==4:
+        stringContinuationList,indentationBlockList, \
+        lineContinuationList,parentheticalContinuationList = continuations
     
     commandList=[]
     firstLine = True
