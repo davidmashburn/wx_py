@@ -1,4 +1,11 @@
 ## NEED TO FINISH MERGE WITHmathtextNamesSplitMergeWsC.py
+
+# Change the format of these entries to:
+# [unicodeNumber,'mainName',['alternate','aliases'], symbolType (See below), operatorType (None unless infix binary), operatorCharacter
+
+# Add a function to auto-check for:
+#   conflicts, availability of a name or number, etc...
+
 # Maybe find a way to autoconvert this...
 
 nameAddOn = 'SYMPYSL_'
@@ -237,7 +244,7 @@ name2greek['om'] = name2greek['omega']
 name2greek['ps'] = name2greek['psi']
 
 name2greek['ce'] = name2greek['varepsilon']
-name2greek['cph'] = name2greek['phi']
+name2greek['cph'] = name2greek['varphi']
 name2greek['cpi'] = name2greek['varpi']
 name2greek['cth'] = name2greek['vartheta']
 name2greek['ck'] = name2greek['varkappa']
@@ -413,7 +420,12 @@ del n2doo
 # ---- 5: Mathematical Symbols (Converts like greek) -----
 name2math_symbol_Num = {
 'nullset' : 0x2205,
-'infinity' : 0x221e
+'infinity' : 0x221e,
+'differentialD' : 0x2145,
+'differentiald' : 0x2146,
+'naturalExponent' : 0x2147,
+'imaginaryI' : 0x2148,
+'imaginaryJ' : 0x2149,
 }
 
 math_symbols=[unichr(i).encode('utf-8') for i in name2math_symbol_Num.values()]
@@ -430,6 +442,14 @@ math_symbol2name = dict([ [math_symbols[i],math_symbol_names[i]]
 #                          ])
 
 name2math_symbol['inf'] = name2math_symbol['infinity']
+name2math_symbol['diffD'] = name2math_symbol['differentialD']
+name2math_symbol['DD'] = name2math_symbol['differentialD']
+name2math_symbol['diffd'] = name2math_symbol['differentiald']
+name2math_symbol['dd'] = name2math_symbol['differentiald']
+name2math_symbol['natExp'] = name2math_symbol['naturalExponent']
+name2math_symbol['ee'] = name2math_symbol['naturalExponent']
+name2math_symbol['ii'] = name2math_symbol['imaginaryI']
+name2math_symbol['jj'] = name2math_symbol['imaginaryJ']
 
 # ----- 6: Binary operators that support simple unicode to ascii conversion -----
 # (all these are simple equality operators)

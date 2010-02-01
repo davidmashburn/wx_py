@@ -216,6 +216,8 @@ class SlicesShellFrame(frame.Frame, frame.ShellFrameMixin):
         self.sliceshell.SetFocus()
         self.LoadSettings()
         
+        self.currentDirectory = os.path.expanduser('~')
+        
         if filename!=None:
             self.bufferOpen(filename)
         
@@ -387,11 +389,13 @@ class SlicesShellFrame(frame.Frame, frame.ShellFrameMixin):
         
         if file==None:
             file=wx.FileSelector('Open a (Sym)PySlices File',
-                                 wildcard='*.sympyslices|*.sympyslices|*.pyslices|*.pyslices')
+                                 wildcard='*.sympyslices|*.sympyslices|*.pyslices|*.pyslices',
+                                 default_path=self.currentDirectory)
         if file!=None and file!=u'':
             fid=open(file,'r')
             self.sliceshell.LoadPySlicesFile(fid)
             fid.close()
+            self.currentDirectory = os.path.split(file)[0]
             self.SetTitle( os.path.split(file)[1] + ' - SymPySlices')
             self.sliceshell.NeedsCheckForSave=False
             self.sliceshell.SetSavePoint()
