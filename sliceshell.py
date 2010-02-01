@@ -1604,7 +1604,7 @@ class SlicesShell(editwindow.EditWindow):
         
         doLineBreak=False
         doSubmitCommand=False
-        
+        doPass=False
         # Return is used to insert a line break.
         # In Shell Mode, hit Return or Enter twice to submit a command
         if ((not controlDown and not shiftDown and not altDown) and
@@ -1626,8 +1626,19 @@ class SlicesShell(editwindow.EditWindow):
                 else:
                     stillIndented=False
                 
-                if strCont[-1] or indentBlock[-1] or lineCont[-1] or parenCont[-1] or stillIndented:
+                if strCont[-1] or indentBlock[-1] or lineCont[-1] or \
+                   parenCont[-1]:
                     doLineBreak=True
+                elif stillIndented:
+                    new_pos=self.GetLineEndPosition(endLine)
+                    self.SetCurrentPos(new_pos)
+                    self.SetSelection(new_pos,new_pos)
+                    doLineBreak=True
+                elif self.GetCurrentLine()!=endLine:
+                    new_pos=self.GetLineEndPosition(endLine)
+                    self.SetCurrentPos(new_pos)
+                    self.SetSelection(new_pos,new_pos)
+                    doPass = True
                 else:
                     doSubmitCommand=True
         # Enter (Shift/Ctrl + Enter/Return) submits a command to the interpreter.
@@ -1642,7 +1653,9 @@ class SlicesShell(editwindow.EditWindow):
         
         #Only relevant in ShellMode...
         
-        if doLineBreak or doSubmitCommand:
+        if doPass:
+            pass
+        elif doLineBreak or doSubmitCommand:
             if self.CallTipActive():
                 self.CallTipCancel()
             elif self.SliceSelection:

@@ -1073,7 +1073,7 @@ class SlicesShell(editwindow.EditWindow):
         continuations = testForContinuations(text)
         
         if len(continuations)==2: # Error case...
-            return 'Error'
+            return None,continuations[1]
         elif len(continuations)==4:
             stringContinuationList,indentationBlockList, \
             lineContinuationList,parentheticalContinuationList = continuations
@@ -1685,7 +1685,7 @@ class SlicesShell(editwindow.EditWindow):
         
         doLineBreak=False
         doSubmitCommand=False
-        
+        doPass=False
         # Return is used to insert a line break.
         # In Shell Mode, hit Return or Enter twice to submit a command
         if ((not controlDown and not shiftDown and not altDown) and
@@ -1697,7 +1697,7 @@ class SlicesShell(editwindow.EditWindow):
                 startpos = self.PositionFromLine(startLine)
                 endpos = self.GetLineEndPosition(endLine)
                 command = self.GetTextRange(startpos, endpos)
-                strCont,indentBlock,lineCont,parenCont = testForContinuations(command)
+                strCont,indentBlock,lineCont,parenCont = testForContinuations(command,ignoreErrors=True)
                 
                 lastLine = command.split('\n')[-1]
                 if lastLine.lstrip()=='': # all whitespace...
@@ -1707,8 +1707,19 @@ class SlicesShell(editwindow.EditWindow):
                 else:
                     stillIndented=False
                 
-                if strCont[-1] or indentBlock[-1] or lineCont[-1] or parenCont[-1] or stillIndented:
+                if strCont[-1] or indentBlock[-1] or lineCont[-1] or \
+                   parenCont[-1]:
                     doLineBreak=True
+                elif stillIndented:
+                    new_pos=self.GetLineEndPosition(endLine)
+                    self.SetCurrentPos(new_pos)
+                    self.SetSelection(new_pos,new_pos)
+                    doLineBreak=True
+                elif self.GetCurrentLine()!=endLine:
+                    new_pos=self.GetLineEndPosition(endLine)
+                    self.SetCurrentPos(new_pos)
+                    self.SetSelection(new_pos,new_pos)
+                    doPass = True
                 else:
                     doSubmitCommand=True
         # Enter (Shift/Ctrl + Enter/Return) submits a command to the interpreter.
@@ -1723,7 +1734,9 @@ class SlicesShell(editwindow.EditWindow):
         
         #Only relevant in ShellMode...
         
-        if doLineBreak or doSubmitCommand:
+        if doPass:
+            pass
+        elif doLineBreak or doSubmitCommand:
             if self.CallTipActive():
                 self.CallTipCancel()
             elif self.SliceSelection:
@@ -2417,6 +2430,10 @@ class SlicesShell(editwindow.EditWindow):
         
         self.EmptyUndoBuffer()
         self.NeedsCheckForSave=True
+        if self.hasSyntaxError:
+            pos=self.GetLineEndPosition(self.syntaxErrorRealLine)
+            self.SetCurrentPos(pos)
+            self.SetSelection(pos,pos)
     
     # Not Used!!
     def getMultilineCommand(self, rstrip=True):
@@ -2491,12 +2508,14 @@ class SlicesShell(editwindow.EditWindow):
             command=magic(command)
         
         # Allows multi-component commands...
-        useExecMode=False
+        self.hasSyntaxError=False
         if useMultiCommand:
             result = self.BreakTextIntoCommands(command)
-            if result == 'Error':
+            if result[0] == None:
                 commands=[command]
-                useExecMode=True
+                self.hasSyntaxError=True
+                syntaxErrorLine=result[1]+1
+                self.syntaxErrorRealLine = self.GetCurrentLine()+result[1]-len(command.split('\n'))
             else:
                 commands=result
         else:
@@ -2508,7 +2527,11 @@ class SlicesShell(editwindow.EditWindow):
 
         # Special syntax to force automatic symbol creation... Hooray!
         for i in commands:
-            if i.strip()!='':
+            if self.hasSyntaxError:
+                lineno=syntaxErrorLine
+                offset=0 # not sure how to easily recover this information...
+                self.write('  File "<input>", line '+str(lineno)+'\n    '+i.split('\n')[lineno-1]+'\n'+' '*offset+'    ^\nSyntaxError: invalid syntax\n','Error')
+            elif i.strip()!='':
                 if i.strip()[0]!='#':
                     newCommand = symbolConversion.FormatUnicodeForPythonInterpreter(i)
                     # This works ... need a menu option to enable, because it's very useful,
@@ -3441,6 +3464,9 @@ class SlicesShell(editwindow.EditWindow):
         if marker & OUTPUT_MASK:
             return False
         elif marker & INPUT_MASK:
+            if self.reader.isreading and not \
+                    (self.MarkerGet(self.GetCurrentLine()) & 1<<INPUT_READLINE ):
+                return False
             start,end=self.GetIOSlice()
             sliceStartPos=self.PositionFromLine(start)
             sliceEndPos=self.GetLineEndPosition(end)
@@ -3558,11 +3584,11 @@ class SlicesShell(editwindow.EditWindow):
         self.SetSelection(startpos, endpos)
         self.ReplaceSelection('')
         
-        useExecMode=False
+        hasSyntaxError=False
         result = self.BreakTextIntoCommands(command)
-        if result == 'Error':
+        if result[0] == None:
             commands=[command]
-            useExecMode=True
+            hasSyntaxError=True
         else:
             commands=result
         
