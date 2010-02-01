@@ -32,9 +32,14 @@ def testForContinuations(codeBlock,ignoreErrors=False):
     indentationBlockList=[]
     parentheticalContinuationList=[]
     newIndent=False
+    lspContinuation=False
     for i,l in enumerate(codeBlock.split('\n')):
         currentIndentation = len(l)-len(l.lstrip())
         
+        if i>0:
+            lspContinuation = lineContinuationList[-1] or \
+                              stringContinuationList[-1] or \
+                              parentheticalContinuationList[-1]
         # first, check for non-executing lines (whitespace and/or comments only)
         if l.lstrip()=='':
             emptyLine=True
@@ -45,8 +50,10 @@ def testForContinuations(codeBlock,ignoreErrors=False):
             if newIndent and currentIndentation>indentNumber[-1]:
                 newIndent=False
                 indentNumber.append(currentIndentation)
-            elif currentIndentation in indentNumber:
-                while currentIndentation>indentNumber[-1]:
+            elif lspContinuation:
+                pass
+            elif not newIndent and currentIndentation in indentNumber:
+                while currentIndentation<indentNumber[-1]:
                     indentNumber.pop() # This is the end of an indentation block
             elif not ignoreErrors:
                 print 'Invalid Indentation!!'
@@ -114,7 +121,7 @@ def testForContinuations(codeBlock,ignoreErrors=False):
     
     if newIndent and not ignoreErrors:
         print 'Incomplete Indentation!'
-        return ['Incomplete Indentation Error',i-1]
+        return ['Incomplete Indentation Error',i]
     
     # Note that if one of these errors above gets thrown, the best solution is to pass the resulting block
     # to the interpreter as exec instead of interp

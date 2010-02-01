@@ -2394,7 +2394,7 @@ class SlicesShell(editwindow.EditWindow):
                 commands=[command]
                 self.hasSyntaxError=True
                 syntaxErrorLine=result[1]+1
-                self.syntaxErrorRealLine = self.GetCurrentLine()+result[1]-1
+                self.syntaxErrorRealLine = self.GetCurrentLine()+result[1]-len(command.split('\n'))
             else:
                 commands=result
         else:
@@ -2406,7 +2406,6 @@ class SlicesShell(editwindow.EditWindow):
         
         for i in commands:
             if self.hasSyntaxError:
-                # TODO : NEED TO GET THESE FROM SOMEWHERE!!!
                 lineno=syntaxErrorLine
                 offset=0 # not sure how to easily recover this information...
                 self.write('  File "<input>", line '+str(lineno)+'\n    '+i.split('\n')[lineno-1]+'\n'+' '*offset+'    ^\nSyntaxError: invalid syntax\n','Error')
