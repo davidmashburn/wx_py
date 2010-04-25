@@ -45,6 +45,7 @@ ID_SHOW_LINENUMBERS = wx.NewId()
 ID_ENABLESHELLMODE = wx.NewId()
 ID_ENABLEAUTOSYMPY = wx.NewId()
 ID_AUTO_SAVESETTINGS = wx.NewId()
+ID_SAVEACOPY = wx.NewId()
 ID_SAVEHISTORY = wx.NewId()
 ID_SAVEHISTORYNOW = wx.NewId()
 ID_CLEARHISTORY = wx.NewId()
@@ -115,6 +116,9 @@ class Frame(wx.Frame):
                  'Save file')
         m.Append(ID_SAVEAS, 'Save &As \tCtrl+Shift+S',
                  'Save file with new name')
+        if self.shellName in ['PySlices','SymPySlices']:
+            m.Append(ID_SAVEACOPY, 'Save A Cop&y',
+                 'Save a copy of the file without changing the current file')
         m.AppendSeparator()
         m.Append(ID_PRINT, '&Print... \tCtrl+P',
                  'Print file')
@@ -150,7 +154,7 @@ class Frame(wx.Frame):
                  'Delete all the contents of the edit buffer')
         m.Append(ID_FIND, '&Find Text... \tCtrl+F',
                  'Search for text in the edit buffer')
-        m.Append(ID_FINDNEXT, 'Find &Next \tF3',
+        m.Append(ID_FINDNEXT, 'Find &Next \tCtrl+G',
                  'Find next/previous instance of the search text')
 
         # View
@@ -256,6 +260,7 @@ class Frame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.OnFileClose, id=ID_CLOSE)
         self.Bind(wx.EVT_MENU, self.OnFileSave, id=ID_SAVE)
         self.Bind(wx.EVT_MENU, self.OnFileSaveAs, id=ID_SAVEAS)
+        self.Bind(wx.EVT_MENU, self.OnFileSaveACopy, id=ID_SAVEACOPY)
         self.Bind(wx.EVT_MENU, self.OnFileUpdateNamespace, id=ID_NAMESPACE)
         self.Bind(wx.EVT_MENU, self.OnFilePrint, id=ID_PRINT)
         self.Bind(wx.EVT_MENU, self.OnExit, id=ID_EXIT)
@@ -372,6 +377,9 @@ class Frame(wx.Frame):
     def OnFileSaveAs(self, event):
         self.bufferSaveAs()
 
+    def OnFileSaveACopy(self, event):
+        self.bufferSaveACopy()
+    
     def OnFileUpdateNamespace(self, event):
         self.updateNamespace()
 
@@ -575,6 +583,9 @@ class Frame(wx.Frame):
                              and self.bufferHasChanged())
             elif id == ID_SAVEAS:
                 event.Enable(hasattr(self, 'bufferSaveAs')
+                             and self.hasBuffer())
+            elif id == ID_SAVEACOPY:
+                event.Enable(hasattr(self, 'bufferSaveACopy')
                              and self.hasBuffer())
             elif id == ID_NAMESPACE:
                 event.Enable(hasattr(self, 'updateNamespace')

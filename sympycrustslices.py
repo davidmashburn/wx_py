@@ -238,15 +238,46 @@ class CrustSlicesFrame(crustslices.CrustSlicesFrame):
             filedir = self.buffer.doc.filedir
         result = editor.saveSingle(title='Save SymPySlices File',directory=filedir,
                                    wildcard='SymPySlices Files (*.sympyslices)|*.sympyslices')
-        if result.path!='':
-            if result.path[-9:]!=".sympyslices":
+        if result.path not in ['',None]:
+            if result.path[-9:]==".pyslices":
+                result.path = result.path[:-9]
+            if result.path[-12:]!=".sympyslices":
                 result.path+=".sympyslices"
-        if result.path:
+            
             self.buffer.doc = document.Document(result.path)
             self.buffer.name = self.buffer.doc.filename
             self.buffer.modulename = self.buffer.doc.filebase
-            self.simpleSave()
+            self.simpleSave(confirmed=True) # allow overwrite
             cancel = False
         else:
             cancel = True
         return cancel
+    
+    def bufferSaveACopy(self):
+        """Save buffer to a new filename."""
+        filedir = ''
+        if self.buffer and self.buffer.doc.filedir:
+            filedir = self.buffer.doc.filedir
+        result = editor.saveSingle(title='Save a Copy of SymPySlices File',directory=filedir,
+                                   wildcard='SymPySlices Files (*.sympyslices)|*.sympyslices')
+        print result.path
+        if result.path not in ['',None]:
+            if result.path[-9:]==".pyslices":
+                result.path = result.path[:-9]
+            if result.path[-12:]!=".sympyslices":
+                result.path+=".sympyslices"
+            
+            # if not os.path.exists(result.path):
+            try: # Allow overwrite...
+                fid = open(result.path, 'wb')
+                self.sliceshell.SavePySlicesFile(fid)
+            finally:
+                if fid:
+                    fid.close()
+                
+            cancel = False
+        else:
+            cancel = True
+        return cancel
+    
+    

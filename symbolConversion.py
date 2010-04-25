@@ -28,9 +28,9 @@ ESC_SYMBOL = unichr(0x0022ee).encode('utf-8')
 
 # Dictionary to convert symbols to ast Names, in order of precedence
 precedence2astName = {
-'not' : ast.Not, # special for the not character (unary)
 'or' : ast.Or,
 'and': ast.And,
+'not' : ast.Not, # special for the not character (unary)
 '==' : ast.Eq,
 '|'  : ast.BitOr,
 '^'  : ast.BitXor,
@@ -40,6 +40,36 @@ precedence2astName = {
 '*'  : ast.Mult,
 '**' : ast.Pow
 }
+
+# add rules to deal with cases other than BinOp(expr left, operator op, expr right):
+#1: BoolOp(boolop op, expr* values)
+#2: Compare(expr left, cmpop* ops, expr* comparators)
+#3: UnaryOp(unaryop op, expr operand)
+
+# in the future, first test Unary Operators for replacement (to catch any quirks with +/-)
+#   then do Compares, BoolOps and BinOps
+# Note that Compares and BoolOps can be multiple...
+#   this means that upon conversion, will have to change (==,or,and):
+#        1 or 2 or 3
+#     'Module(body=[Expr(value=BoolOp(op=Or(), values=[Num(n=1), Num(n=2), Num(n=3)]))])'
+#   to:  (1 or 2) or 3
+#     'Module(body=[Expr(value=BoolOp(op=Or(), values=[BoolOp(op=Or(), values=[Num(n=1), Num(n=2)]), Num(n=3)]))])'
+#
+#   and: 1 == 2 == 3
+#     'Module(body=[Expr(value=Compare(left=Num(n=1), ops=[Eq(), Eq()], comparators=[Num(n=2), Num(n=3)]))])'
+#   NOT TO:  (1 == 2) == 3
+#     'Module(body=[Expr(value=Compare(left=Compare(left=Num(n=1), ops=[Eq()], comparators=[Num(n=2)]), ops=[Eq()], comparators=[Num(n=3)]))])'
+#   but to:  1==2 and 2==3
+#     'Module(body=[Expr(value=BoolOp(op=And(), values=[Compare(left=Num(n=1), ops=[Lt()], comparators=[Num(n=2)]),
+#                                                       Compare(left=Num(n=2), ops=[Eq()], comparators=[Num(n=3)])]))])'
+
+# Key ideas:
+# If there are only 2 parameters, transform very much like BinOp, otherwise:
+#  BoolOp has "op=Or()" and "values=[Num(n=1), Num(n=2), Num(n=3)]"
+#  For BoolOp, convert to nested statements 1 or 2 or 3 -> f(f(1,2),3)
+#  Compare has "left=Num(n=1)" and "ops=[Eq(), Eq()]" and "comparators=[Num(n=2), Num(n=3)]"
+#  For Compare, first convert to and-separated statements: 1==2==3 -> 1==2 and 2==3
+#  From there, convert to functions: 1==2 and 2==3 -> f(1,2) and f(2,3)
 
 class BinOpRowColCollector(ast.NodeVisitor):
     def __init__(self):
