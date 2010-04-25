@@ -152,7 +152,7 @@ class CrustSlicesFrame(crustslices.CrustSlicesFrame):
         self.sliceshell.SetFocus()
         self.LoadSettings()
         
-        self.currentDirectory = os.path.expanduser('~')
+        self.currentDirectory = os.getcwd()
         
         if filename!=None:
             self.bufferOpen(filename)

@@ -174,7 +174,7 @@ class SlicesShellFrame(frame.Frame, frame.ShellFrameMixin):
         self.sliceshell.SetFocus()
         self.LoadSettings()
         
-        self.currentDirectory = os.path.expanduser('~')
+        self.currentDirectory = os.getcwd()
         
         if filename!=None:
             self.bufferOpen(filename)
