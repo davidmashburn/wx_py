@@ -6,10 +6,10 @@ __author__ = "David N. Mashburn <david.n.mashburn@gmail.com>"
 import ast
 from ast import Call, Load, Name, copy_location
 import unicodedata
-from newPyCrust.symbolConversionDicts import infixOperatorNames, \
+from wx.pysymbolConversionDicts import infixOperatorNames, \
                                              NameToInfixAstSubstitute, \
                                           ToName, FromName,ToInterpreter
-#from newPyCrust.symbolConversionData import *
+#from wx.pysymbolConversionData import *
 
 nameAddOn = 'SYMPYSL_'
 

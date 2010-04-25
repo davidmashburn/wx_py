@@ -709,15 +709,10 @@ class Shell(editwindow.EditWindow):
         
         # Don't allow line deletion.
         elif controlDown and key in (ord('L'), ord('l')):
-            # TODO : Allow line deletion eventually...
-            #event.Skip()
             pass
 
         # Don't allow line transposition.
         elif controlDown and key in (ord('T'), ord('t')):
-            # TODO : Allow line transposition eventually...
-            # TODO : Will have to adjust markers accordingly and test if allowed...
-            #event.Skip()
             pass
 
         # Basic navigation keys should work anywhere.

@@ -1,7 +1,7 @@
 # With so many values to index, I will have to automatically look for anything of the form SYMPYSL_*_
 #   and then use dictionary indexing to find the result for any reasonable speed
 # See MakeUnicodeDataFile.pyslices for some prototype file tools...
-from newPyCrust.symbolConversionTable import unicodeConversionTable
+from wx.pysymbolConversionTable import unicodeConversionTable
 import os
 import ast
 #from newPyCrust import symbolConversionNew

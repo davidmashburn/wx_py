@@ -181,7 +181,23 @@ class CrustSlicesFrame(crustslices.CrustSlicesFrame):
         """Use Automatic Conversion of Undefined Variables To Sympy Symbols"""
         frame.Frame.OnEnableAutoSympy(self,event)
         self.sliceshell.ToggleAutoSympy(self.enableAutoSympy)
-
+    
+    def bufferNew(self):
+        """Create new buffer."""
+        cancel = self.bufferSuggestSave()
+        if cancel:
+            return cancel
+        self.sliceshell.clear()
+        self.SetTitle( 'SymPySlices')
+        self.sliceshell.NeedsCheckForSave=False
+        self.sliceshell.SetSavePoint()
+        self.buffer.doc = document.Document()
+        self.buffer.name = 'This shell'
+        self.buffer.modulename = self.buffer.doc.filebase
+        #self.bufferCreate()
+        cancel = False
+        return cancel
+    
     def bufferOpen(self,file=None):
         """Open file in buffer."""
         if self.bufferHasChanged():

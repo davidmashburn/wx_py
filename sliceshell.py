@@ -1902,7 +1902,6 @@ class SlicesShell(editwindow.EditWindow):
         
         # Don't allow line deletion.
         #elif controlDown and key in (ord('L'), ord('l')):
-            # TODO : Allow line deletion eventually ??
             #event.Skip()
         #    pass
         

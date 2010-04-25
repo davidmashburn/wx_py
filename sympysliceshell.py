@@ -377,7 +377,7 @@ class SlicesShellFrame(frame.Frame, frame.ShellFrameMixin):
             return cancel
         #self.bufferCreate()
         self.clear()
-        self.SetTitle( 'PySlices')
+        self.SetTitle( 'SymPySlices')
         self.sliceshell.NeedsCheckForSave=False
         self.sliceshell.SetSavePoint()
         self.buffer.doc = document.Document()
@@ -1990,7 +1990,6 @@ class SlicesShell(editwindow.EditWindow):
         
         # Don't allow line deletion.
         #elif controlDown and key in (ord('L'), ord('l')):
-            # TODO : Allow line deletion eventually ??
             #event.Skip()
         #    pass
         
