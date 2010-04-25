@@ -28,7 +28,7 @@ class App(wx.App):
     def OnInit(self):
         import os
         import wx
-        from newPyCrust import sympycrustslices
+        from wx.py import sympycrustslices
         from wx import py
         
         self.SetAppName("sympyslices")
