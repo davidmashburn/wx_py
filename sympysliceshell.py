@@ -372,11 +372,17 @@ class SlicesShellFrame(frame.Frame, frame.ShellFrameMixin):
 
     def bufferNew(self):
         """Create new buffer."""
-        if self.bufferHasChanged():
-            cancel = self.bufferSuggestSave()
-            if cancel:
-                return cancel
-        self.bufferCreate()
+        cancel = self.bufferSuggestSave()
+        if cancel:
+            return cancel
+        #self.bufferCreate()
+        self.clear()
+        self.SetTitle( 'PySlices')
+        self.sliceshell.NeedsCheckForSave=False
+        self.sliceshell.SetSavePoint()
+        self.buffer.doc = document.Document()
+        self.buffer.name = 'This shell'
+        self.buffer.modulename = self.buffer.doc.filebase
         cancel = False
         return cancel
 

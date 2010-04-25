@@ -325,11 +325,17 @@ class SlicesShellFrame(frame.Frame, frame.ShellFrameMixin):
 
     def bufferNew(self):
         """Create new buffer."""
-        if self.bufferHasChanged():
-            cancel = self.bufferSuggestSave()
-            if cancel:
-                return cancel
-        self.bufferCreate()
+        cancel = self.bufferSuggestSave()
+        if cancel:
+            return cancel
+        #self.bufferCreate()
+        self.clear()
+        self.SetTitle( 'PySlices')
+        self.sliceshell.NeedsCheckForSave=False
+        self.sliceshell.SetSavePoint()
+        self.buffer.doc = document.Document()
+        self.buffer.name = 'This shell'
+        self.buffer.modulename = self.buffer.doc.filebase
         cancel = False
         return cancel
 
@@ -506,7 +512,7 @@ Ctrl-Shift-Space  Show Call Tip.
 Ctrl-Shift-H      Complete Text from History.
 
 Ctrl+F            Search 
-F3                Search next
+Ctrl+G            Search next
 F12               on/off "free-edit" mode
                   For testing only -- This does not preserve markers!
 
@@ -1741,7 +1747,7 @@ class SlicesShell(editwindow.EditWindow):
         elif altDown and not controlDown \
                  and key in (ord('C'), ord('c'), wx.WXK_INSERT):
             self.CopyWithPromptsPrefixed()
-
+        
         # Home needs to be aware of the prompt.
         elif controlDown and key == wx.WXK_HOME:
             # Go to the beginning of the IO Slice

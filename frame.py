@@ -58,6 +58,7 @@ ID_STARTUP = wx.NewId()
 ID_SETTINGS = wx.NewId()
 ID_FIND = wx.ID_FIND
 ID_FINDNEXT = wx.NewId()
+ID_FINDPREVIOUS = wx.NewId()
 ID_SHOWTOOLS = wx.NewId()
 ID_HIDEFOLDINGMARGIN = wx.NewId()
 
@@ -155,8 +156,10 @@ class Frame(wx.Frame):
         m.Append(ID_FIND, '&Find Text... \tCtrl+F',
                  'Search for text in the edit buffer')
         m.Append(ID_FINDNEXT, 'Find &Next \tCtrl+G',
-                 'Find next/previous instance of the search text')
-
+                 'Find next instance of the search text')
+        m.Append(ID_FINDPREVIOUS, 'Find Pre&vious \tCtrl+Shift+G',
+                 'Find previous instance of the search text')
+        
         # View
         m = self.viewMenu = wx.Menu()
         m.Append(ID_WRAP, '&Wrap Lines\tCtrl+Shift+W',
@@ -298,6 +301,7 @@ class Frame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.OnShowPySlicesTutorial, id=ID_SHOWPYSLICESTUTORIAL)
         self.Bind(wx.EVT_MENU, self.OnFindText, id=ID_FIND)
         self.Bind(wx.EVT_MENU, self.OnFindNext, id=ID_FINDNEXT)
+        self.Bind(wx.EVT_MENU, self.OnFindPrevious, id=ID_FINDPREVIOUS)
         self.Bind(wx.EVT_MENU, self.OnToggleTools, id=ID_SHOWTOOLS)
         self.Bind(wx.EVT_MENU, self.OnHideFoldingMargin, id=ID_HIDEFOLDINGMARGIN)
         
@@ -340,6 +344,7 @@ class Frame(wx.Frame):
         self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateMenu, id=ID_EDITSTARTUPSCRIPT)
         self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateMenu, id=ID_FIND)
         self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateMenu, id=ID_FINDNEXT)
+        self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateMenu, id=ID_FINDPREVIOUS)
         self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateMenu, id=ID_SHOWTOOLS)
         self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateMenu, id=ID_HIDEFOLDINGMARGIN)
         
@@ -538,11 +543,20 @@ class Frame(wx.Frame):
         if self.findDlg is not None:
             return
         win = wx.Window.FindFocus()
-        self.findDlg = wx.FindReplaceDialog(win, self.findData, "Find",
-                                            wx.FR_NOWHOLEWORD)
+        if self.shellName == 'PyCrust':
+            self.findDlg = wx.FindReplaceDialog(win, self.findData,
+                                               "Find",wx.FR_NOWHOLEWORD)
+        else:
+            self.findDlg = wx.FindReplaceDialog(win, self.findData,
+                "Find & Replace", wx.FR_NOWHOLEWORD|wx.FR_REPLACEDIALOG)
         self.findDlg.Show()
         
-    def OnFindNext(self, event):
+    def OnFindNext(self, event,backward=False):
+        if backward and (self.findData.GetFlags() & wx.FR_DOWN):
+            self.findData.SetFlags( self.findData.GetFlags() ^ wx.FR_DOWN )
+        elif not backward and not (self.findData.GetFlags() & wx.FR_DOWN):
+            self.findData.SetFlags( self.findData.GetFlags() ^ wx.FR_DOWN )
+        
         if not self.findData.GetFindString():
             self.OnFindText(event)
             return
@@ -554,6 +568,9 @@ class Frame(wx.Frame):
         if self.findDlg is not None:
             self.OnFindClose(None)
 
+    def OnFindPrevious(self, event):
+        self.OnFindNext(event,backward=True)
+    
     def OnFindClose(self, event):
         self.findDlg.Destroy()
         self.findDlg = None
@@ -669,6 +686,8 @@ class Frame(wx.Frame):
             elif id == ID_FIND:
                 event.Enable(hasattr(win, 'DoFindNext'))
             elif id == ID_FINDNEXT:
+                event.Enable(hasattr(win, 'DoFindNext'))
+            elif id == ID_FINDPREVIOUS:
                 event.Enable(hasattr(win, 'DoFindNext'))
 
             elif id == ID_SHOWTOOLS:

@@ -266,11 +266,17 @@ class CrustSlicesFrame(crust.CrustFrame):
 
     def bufferNew(self):
         """Create new buffer."""
-        if self.bufferHasChanged():
-            cancel = self.bufferSuggestSave()
-            if cancel:
-                return cancel
-        self.bufferCreate()
+        cancel = self.bufferSuggestSave()
+        if cancel:
+            return cancel
+        self.sliceshell.clear()
+        self.SetTitle( 'PySlices')
+        self.sliceshell.NeedsCheckForSave=False
+        self.sliceshell.SetSavePoint()
+        self.buffer.doc = document.Document()
+        self.buffer.name = 'This shell'
+        self.buffer.modulename = self.buffer.doc.filebase
+        #self.bufferCreate()
         cancel = False
         return cancel
 
