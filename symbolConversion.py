@@ -160,7 +160,7 @@ def ASTWithConversion(s):
     bo2f=BinOp2Function()
     for name in names:
         if len(coords[name])>0:
-            bo2f.funcName = '__'+name+'__'
+            bo2f.funcName = '__'+ToName[FromName[name].decode('utf-8')]+'__'
             bo2f.astOp = precedence2astName[NameToInfixAstSubstitute[name]]
             bo2f.coords=coords[name]
             mod = bo2f.visit(mod)
