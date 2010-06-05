@@ -1,3 +1,18 @@
+0.9.8.4.5 (5/31/2010)
+-------------------
+Fixed some tutorial typos:
+  Changed Description of shell mode...
+  In sympyslices, 'not' is now 'now'
+  Change dot variables to c,d
+
+Added cphi, ctheta, etc... to the list of supported names...
+
+Changed to allow a second defaults file specifically for overloading special characters!
+This file is actually a module within wx.py that contains one large string called
+"commands" to be run by the interpreter line by line...
+
+SymPySlices Tutorial has really been tuned up to account for these and other changes...
+
 0.9.8.4 - 0.9.8.4.4 (5/31/2010)
 -------------------
 Fixed some issues with file save an load on windows.

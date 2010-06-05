@@ -118,7 +118,7 @@ using Ctrl-Return, Shift-Return, or Numpad Enter to execute.
 Previous commands (Old Slices) can be re-edited and run again in place.
 
 Slices can also be:
- * selceted (click on the margin, Shift-click for multiple selection)
+ * selected (click on the margin, Shift-click for multiple selection)
  * folded (click the margin twice)
  * selected and deleted (hit delete while selected)
  * divided (Ctrl-D)
@@ -128,7 +128,7 @@ Try deleting the slice above this one by clicking on the red margin.
 
 If you want a more traditional shell feel, try enabling "Shell Mode" in
 "Options->Settings->Shell Mode" (or try PyCrust).
-In Shell Mode, two returns in a row executes the command, and
+In Shell Mode, Return acts in the usual way, executing command, and
     Ctrl-Return and Shift-Return always print newlines.
 
 SymPySlices adds further enhancements!  Undefined variables are
@@ -142,28 +142,28 @@ will automatically insert the Greek letter theta!
 
 In SymPySlices, these unicode characters can also be used as valid python!
 
-A limited number of symbols and operators are supported not, but many others could be
+A limited number of symbols and operators are supported now, but many others could be
 added in the future!  Operator support uses an "infix-to-prefix" conversion
 using the python module ast.
 
-In total, typing this below:
+As an example, try typing this below:
 <ESC>theta<ESC> = 2
 <ESC>theta<ESC> + <ESC>phi<ESC>
 
-Should result in 2 + \xcf\x86!
+Should result in 2 + SYMPYSL_GreekPhiSymbol_!
 
 Typing <ESC>integral<ESC>(x**2,x)
 
-Results in __integral__(x**2, x)
+Results in x**3/3!
+The SYMPYSL_Intergal_ operator has been defined as sympy.integral in SymPySlicesDefaults.py
+And, it can easily be overloaded simply by assignment!
 
-Also, typing a<ESC>dot<ESC>b below:
+Also, typing c<ESC>dot<ESC>d below:
 
-Should result in __dot__(a,b)!
+Should result in __DotOperator__(c,d)!
 
-It is now easy to define this operator by setting __dot__ to something useful like
-"__dot__ = lambda x,y: sum([x[i]*y[i] for i in range(len(x))])"
-or
-"__dot__ = numpy.dot"
+You might also try [1,2,3,4]SYMPYSL_DotOperator_[4,3,2,1]
+This produces the result expected, 20
 
 This operator feature is VERY EXPERIMENTAL but could be really useful!
 
@@ -897,6 +897,30 @@ class SlicesShell(editwindow.EditWindow):
         # Add 'shell' to the interpreter's local namespace.
         self.setLocalShell()
         
+        # Also, force import of sympy
+        try:
+            import sympy
+        except ImportError:
+            print 'Sympy must be installed to use SymPySlices!'
+            self.exit()
+        from wx.py import SymPySlicesDefaults
+        self.interp.push('from __future__ import division\n')
+        self.interp.push('import sympy\n')
+        
+        self.push(SymPySlicesDefaults.commands)
+        
+        #for i in SymPySlicesDefaults.commands.split(os.linesep):
+        #    self.interp.push(i+'\n')
+        
+        #self.interp.push("from __future__ import division \n")
+        #self.interp.push("import sympy\n")
+        #self.interp.push("sp = sympy.pretty_print\n")
+        #self.interp.push("SYMPYSL_infinity_ = sympy.oo")
+        #self.interp.push("SYMPYSL_pi_ = sympy.pi")
+        #self.interp.push("__divisionsign__ = sympy.Rational")
+        
+        #self.interp.push("import numpy\n")
+        
         # Do this last so the user has complete control over their
         # environment.  They can override anything they want.
         if execStartupScript:
@@ -905,20 +929,6 @@ class SlicesShell(editwindow.EditWindow):
             self.execStartupScript(startupScript)
         else:
             self.prompt()
-        # Also, force import of sympy
-        try:
-            import sympy
-        except ImportError:
-            print 'Sympy must be installed to use SymPySlices!'
-            self.exit()
-        self.interp.push("from __future__ import division \n")
-        self.interp.push("import sympy\n")
-        self.interp.push("sp = sympy.pretty_print\n")
-        self.interp.push("SYMPYSL_infinity_ = sympy.oo")
-        self.interp.push("SYMPYSL_pi_ = sympy.pi")
-        self.interp.push("__divisionsign__ = sympy.Rational")
-        
-        self.interp.push("import numpy\n")
         
         #self.interp.push("""class Infix:
     #def __init__(self, function):

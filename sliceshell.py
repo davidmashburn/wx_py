@@ -113,7 +113,7 @@ using Ctrl-Return, Shift-Return, or Numpad Enter to execute.
 Previous commands (Old Slices) can be re-edited and run again in place.
 
 Slices can also be:
- * selceted (click on the margin, Shift-click for multiple selection)
+ * selected (click on the margin, Shift-click for multiple selection)
  * folded (click the margin twice)
  * selected and deleted (hit delete while selected)
  * divided (Ctrl-D)
@@ -123,7 +123,7 @@ Try deleting the slice above this one by clicking on the red margin.
 
 If you want a more traditional shell feel, try enabling "Shell Mode" in
 "Options->Settings->Shell Mode" (or try PyCrust).
-In Shell Mode, two returns in a row executes the command, and
+In Shell Mode, Return acts in the usual way, executing command, and
     Ctrl-Return and Shift-Return always print newlines.
 
 Saving and opening "sessions" is now supported!  This is a little
