@@ -878,11 +878,13 @@ class SlicesShell(editwindow.EditWindow):
         outStart,outEnd,inStart,inMiddle,inEnd = [[],[],[],[],[]]
         
         # Make "executed startup script move to the top..."
+        num_lines=self.GetLineCount()
+        print 'NumLines',num_lines
         if showPySlicesTutorial:
             self.write(tutorialText,'Output')
-            tutStart=5
-            testStart=17
-            symTestStart=57
+            tutStart=num_lines+1
+            testStart=num_lines+13
+            symTestStart=num_lines+53
             outStart=[tutStart,testStart+3,symTestStart+1,symTestStart+5,symTestStart+9]
             outEnd=[tutStart-1,testStart-1,symTestStart-1,symTestStart+3,symTestStart+7]
             inStart=[testStart,symTestStart,symTestStart+4,symTestStart+8]
@@ -3767,8 +3769,9 @@ class SlicesShell(editwindow.EditWindow):
                 self.write(w,'Input',silent=True)
                 lineCount+=1
         
-        if w[-1]=='\n':
-            lineCount+=1
+        if w!='':
+            if w[-1]=='\n':
+                lineCount+=1
         
         for i in range(lineCount+1):
             self.clearGroupingMarkers(i)
@@ -3843,22 +3846,22 @@ class SlicesShell(editwindow.EditWindow):
     
     def SavePySlicesFile(self,fid):
         addComment=False
-        fid.write(usrBinEnvPythonText.replace('\n',os.linesep))
-        fid.write(sympyslicesFormatHeaderText[-1].replace('\n',os.linesep))
+        fid.write(usrBinEnvPythonText.replace('\r\n','\n').replace('\n',os.linesep))
+        fid.write(sympyslicesFormatHeaderText[-1].replace('\r\n','\n').replace('\n',os.linesep))
         for i in range(self.GetLineCount()):
             markers=self.MarkerGet(i)
             if markers & ( 1<<GROUPING_START | 1<<GROUPING_START_FOLDED ):
-                fid.write(groupingStartText.replace('\n',os.linesep))
+                fid.write(groupingStartText.replace('\r\n','\n').replace('\n',os.linesep))
             if markers & ( 1<<INPUT_START | 1<<INPUT_START_FOLDED ):
-                fid.write(inputStartText.replace('\n',os.linesep))
+                fid.write(inputStartText.replace('\r\n','\n').replace('\n',os.linesep))
                 addComment=False
             if markers & ( 1<<OUTPUT_START | 1<<OUTPUT_START_FOLDED ):
-                fid.write(outputStartText.replace('\n',os.linesep))
+                fid.write(outputStartText.replace('\r\n','\n').replace('\n',os.linesep))
                 addComment=True
             if addComment: fid.write('#')
             convText = symbolConversion.FormatUnicodeForSave(
                                                         self.GetLine(i)  ) 
-            fid.write(convText.replace('\n',os.linesep))
+            fid.write(convText.replace('\r\n','\n').replace('\n',os.linesep))
     
     # FIX ME!!
     def LoadPyFileAsSlice(self,fid):
