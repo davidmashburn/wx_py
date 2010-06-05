@@ -2,8 +2,8 @@
 things like call tips and command auto completion."""
 
 __author__ = "Patrick K. O'Brien <pobrien@orbtech.com>"
-__cvsid__ = "$Id: introspect.py 39896 2006-06-29 22:24:00Z RD $"
-__revision__ = "$Revision: 39896 $"[11:-2]
+__cvsid__ = "$Id: introspect.py 63480 2010-02-14 05:34:39Z RD $"
+__revision__ = "$Revision: 63480 $"[11:-2]
 
 import cStringIO
 import inspect

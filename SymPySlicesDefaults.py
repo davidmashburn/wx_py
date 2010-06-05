@@ -1,7 +1,13 @@
 commands = """
-import numpy as np
+import sympy
+
 try:
-    if set==0:pass # stupid construct to avoid printing anything
+    pass#import numpy as np
+except:
+    pass
+
+try:
+    if set==0: pass # stupid construct to avoid printing anything
 except NameError:
     import sets.Set as set
 
@@ -32,22 +38,27 @@ def __FractionSlash__(x,y):
 
 __DivisionSign__ = __FractionSlash__
 
-def __DotOperator__(a, b):
+def __DotOperator__(a,b):
     if a.__class__ == sympy.Matrix and b.__class__ == sympy.Matrix:
         return a.dot(a)
     elif hasattr(a,'__iter__') and hasattr(b,'__iter__'):
-        return np.dot(a,b)
+        doListVersion=True
+        try:
+            np
+        except NameError:
+            pass
+        else:
+            if hasattr(np,'__package__'):
+                if np.__package__ == 'numpy':
+                    doListVersion=False
+        if doListVersion:
+            return sum([a[i]*b[i] for i in range(len(a))])
+        else:
+            return np.dot(a,b)
     else:
         return sympy.Symbol('__DotOperator__')(a,b)
-
+    
+# Do this at the end...
 from sympy import *
-
-
-# alternative definitions
-if 0:
-    #import scipy.integrate
-    SYMPYSL_sum_ = np.sum
-    __DotOperator__ = np.dot
-    SYMPYSL_pd_ = np.diff
-    SYMPYSL_pi_ = np.pi
+del(sum) # sum should be the standard sum function, not sympy sum...
 """

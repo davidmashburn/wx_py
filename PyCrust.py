@@ -9,8 +9,8 @@ import __main__
 original = __main__.__dict__.keys()
 
 __author__ = "Patrick K. O'Brien <pobrien@orbtech.com>"
-__cvsid__ = "$Id: PyCrust.py 36607 2005-12-30 23:02:03Z RD $"
-__revision__ = "$Revision: 36607 $"[11:-2]
+__cvsid__ = "$Id: PyCrust.py 63480 2010-02-14 05:34:39Z RD $"
+__revision__ = "$Revision: 63480 $"[11:-2]
 
 import wx
 

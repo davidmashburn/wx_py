@@ -5,8 +5,8 @@ based on wxPython's wxStyledTextCtrl.
 Sponsored by Orbtech - Your source for Python programming expertise."""
 
 __author__ = "Patrick K. O'Brien <pobrien@orbtech.com>"
-__cvsid__ = "$Id: shell.py 60100 2009-04-12 02:56:29Z RD $"
-__revision__ = "$Revision: 60100 $"[11:-2]
+__cvsid__ = "$Id: shell.py 63480 2010-02-14 05:34:39Z RD $"
+__revision__ = "$Revision: 63480 $"[11:-2]
 
 import wx
 from wx import stc

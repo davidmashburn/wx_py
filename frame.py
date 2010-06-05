@@ -1,8 +1,8 @@
 """Base frame with menu."""
 
 __author__ = "Patrick K. O'Brien <pobrien@orbtech.com>"
-__cvsid__ = "$Id: frame.py 60100 2009-04-12 02:56:29Z RD $"
-__revision__ = "$Revision: 60100 $"[11:-2]
+__cvsid__ = "$Id: frame.py 63480 2010-02-14 05:34:39Z RD $"
+__revision__ = "$Revision: 63480 $"[11:-2]
 
 import wx
 import os
@@ -820,7 +820,7 @@ class ShellFrameMixin:
             self.LoadHistory()
 
 
-    def SaveSettings(self,force):
+    def SaveSettings(self, force=False):
         if self.config is not None:
             # always save these
             self.config.WriteBool('Options/AutoSaveSettings',

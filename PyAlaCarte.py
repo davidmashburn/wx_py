@@ -2,8 +2,8 @@
 """PyAlaCarte is a simple programmer's editor."""
 
 __author__ = "Patrick K. O'Brien <pobrien@orbtech.com>"
-__cvsid__ = "$Id: PyAlaCarte.py 26212 2004-03-15 13:42:37Z PKO $"
-__revision__ = "$Revision: 26212 $"[11:-2]
+__cvsid__ = "$Id: PyAlaCarte.py 63480 2010-02-14 05:34:39Z RD $"
+__revision__ = "$Revision: 63480 $"[11:-2]
 
 import wx
 from wx import py

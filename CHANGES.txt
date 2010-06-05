@@ -1,3 +1,12 @@
+0.9.8.4.6 (6/2/2010)
+-------------------
+Merged cvs tags with new changes from wxPython.
+
+Fixed some issues with SymPySlicesDefaults (made it so numpy is optional).
+Before, numpy would be required or else errors would pop up...
+
+Tweaked magic to play nicely with symbols (especially operators).
+
 0.9.8.4.5 (5/31/2010)
 -------------------
 Fixed some tutorial typos:

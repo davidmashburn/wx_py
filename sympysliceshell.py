@@ -2548,10 +2548,11 @@ class SlicesShell(editwindow.EditWindow):
         """Send command to the interpreter for execution."""
         if not silent:
             self.write(os.linesep,type='Output')
-        # TODO : What other magic might we insert here?
-        # TODO : Is there a good reason not to include magic?
+        
+        # This should happen before magic...
+        command = symbolConversion.FormatUnicodeForPythonInterpreter(command)
         if USE_MAGIC:
-            command=magic(command)
+            command=magic(command,useSymbols=True)
         
         # Allows multi-component commands...
         self.hasSyntaxError=False

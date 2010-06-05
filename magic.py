@@ -16,10 +16,9 @@ aliasDict = {}
 # TODO : Still Refining this... seems to be ok for now... still finding gotchas, though!
 # TODO : Multi-line strings seem to be correctly broken into commands by PyCrust(PySlices)
 # TODO : Is there a better version of ls, cd, pwd, etc that could be used?
-def magicSingle(command):
+def magicSingle(command,useSymbols=False):
     if command=='': # Pass if command is blank
         return command
-    
     first_space=command.find(' ')
     
     if command[0]==' ': # Pass if command begins with a space
@@ -60,12 +59,35 @@ def magicSingle(command):
                 wd2=cmds[i]
             if wd2=='':
                 return command
+            
+            # A fix for infix operators within sympyslices:
+            # x . y should not break into x(__DotOperator__ y)
+            #   (with real unicode symbol instead of .)
+            infixOverride=False
+            if useSymbols:
+                if 'SYMPYSL_' in wd1 or 'SYMPYSL_' in wd2:
+                    wd12new = wd1 + ' ' + wd2
+                    import symbolConversion
+                    
+                    while 'SYMPYSL_' in wd12new:
+                        start = wd12new.find('SYMPYSL_')+8
+                        end = start + wd12new[start:].find('_')
+                        nm = wd12new[start:end]
+                        if nm in symbolConversion.infixOperatorNames:
+                            wd12new = wd12new.replace('SYMPYSL_'+nm+'_','*')
+                        else:
+                            wd12new = wd12new.replace('SYMPYSL_'+nm+'_',nm)
+                    
+                    wd1new,wd2new = wd12new.split(' ')
+                    if '*' in wd1new or wd2new[0]=='*':
+                        infixOverride=True
+            
             if (wd1[0].isalpha() or wd1[0]=='_') and (wd2[0].isalnum() or (wd2[0] in """."'_""")) and not keyword.iskeyword(wd1) and not keyword.iskeyword(wd2):
-                if wd1.replace('.','').replace('_','').isalnum():
+                if wd1.replace('.','').replace('_','').isalnum() and not infixOverride:
                     command=wd1+'('+command[(first_space+1):]+')' # add parentheses where the first space was and at the end... hooray!
     return command
 
-def magic(command):
+def magic(command,useSymbols=False):
     continuations = testForContinuations(command)
     
     if len(continuations)==2: # Error case...
@@ -78,12 +100,12 @@ def magic(command):
     firstLine = True
     for i in command.split('\n'):
         if firstLine:
-            commandList.append(magicSingle(i))
+            commandList.append(magicSingle(i,useSymbols=useSymbols))
         elif stringContinuationList.pop(0)==False and \
               indentationBlockList.pop(0)==False and \
               lineContinuationList.pop(0)==False and \
               parentheticalContinuationList.pop(0)==False:
-            commandList.append(magicSingle(i)) # unless this is in a larger expression, use magic
+            commandList.append(magicSingle(i,useSymbols=useSymbols)) # unless this is in a larger expression, use magic
         else:
             commandList.append(i)
         

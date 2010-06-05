@@ -1,8 +1,8 @@
 """EditWindow class."""
 
 __author__ = "Patrick K. O'Brien <pobrien@orbtech.com>"
-__cvsid__ = "$Id: editwindow.py 52521 2008-03-14 22:31:15Z RD $"
-__revision__ = "$Revision: 52521 $"[11:-2]
+__cvsid__ = "$Id: editwindow.py 63480 2010-02-14 05:34:39Z RD $"
+__revision__ = "$Revision: 63480 $"[11:-2]
 
 import wx
 from wx import stc
