@@ -825,7 +825,7 @@ class SlicesShell(editwindow.EditWindow):
         
         # Make "executed startup script move to the top..."
         num_lines=self.GetLineCount()
-        print 'NumLines',num_lines
+        
         if showPySlicesTutorial:
             self.write(tutorialText,'Output')
             tutStart=num_lines+1
