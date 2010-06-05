@@ -1,3 +1,125 @@
+0.9.8.4 - 0.9.8.4.4 (5/31/2010)
+-------------------
+Fixed some issues with file save an load on windows.
+1. Files were not loading properly at all
+2. Files were being saved with '\r\r\n' endings instead of '\r\n'
+
+Fixed tutorial to be smarter about placement given different prior print-outs.
+
+0.9.8.3.6 (5/27/2010)
+-------------------
+
+Added more symbols (notably '~~' and '->') to sympyslices table.
+
+0.9.8.3.5 (4/11/2010)
+-------------------
+Fixed bug that led to initial current directory always being '~' (user folder).
+Now, remains in directory launched from instead.
+
+0.9.8.3.1 - 3 (2/8/2010)
+-------------------
+Added "Save A Copy" menu item.
+Cleaned up the "Save As" code to properly handle file overwrite, etc...
+
+Continued to improve the symbolConversionTable.
+
+Added FindPrevious Menu option, changed FindNext keybinding to Ctrl-G
+Made PySlices and SympySlices have a find-replace dialog instead
+   (still need to implement the replace features, though...)
+
+Fixed a bug in the "New" menu... made it revert to a blank shell
+   (which is the best thing to do without getting into tab/window management)
+
+0.9.8.3 (1/22/2010)
+-------------------
+Major update to the symbolConversion schema for auto-conversion of
+unicode in SymPySlices.
+
+0.9.8.2.6 - 2.8 (1/13/2010)
+-------------------
+Made the shell mode a lot better by preempting the interpreter using parse.py
+Now, rather than the two-return system, it mimics the regular python interpreter!
+Also, a custom-printed SyntaxError message will print if the syntax is not valid...
+And to help the user out,the cursor will return to the line where the error was found!!
+
+0.9.8.2.5 (1/10/2010)
+-------------------
+Added support for remebering last opening directory.  This seems to be a
+more standard feel.
+
+0.9.8.2.3 / 2.4 (12/21/2009)
+-------------------
+
+Added support for smarter parsing... now:
+if 1: # Comment
+supports auto-indent
+
+Separated out the parsing function (testForContinuations) into parse.py
+It now checks for string, line, parenthetical, and indentation-based continuations...
+
+The biggest change in all this, however, is that the shell mode acts much more like a
+traditional python interpreter... no more double-returns... :)
+
+
+0.9.8.2 / 2.1 / 2.2 (12/18/2009)
+-------------------
+Added nominal readline support (fun readline character disappears after running...
+                                SO Much simpler this way...)
+Added safety to prevent running readline input from a different input slice...
+
+Fixed a bug in error printing (was no background color)
+
+Fixed a bug in OnChar (shouldn't have been calling chr() on things like Alt-UpArrow)
+
+0.9.8.1.17 (current)
+-------------------
+<current>
+
+0.9.8.1.16 (12/10/2009) ??
+-------------------
+Removed most unnecessary print commands
+Fixed another bug with triple quotes:
+"""
+
+"""
+print 1
+
+Did not run the 'print 1' command...
+Also, this now runs properly:
+1 #+ \
+2
+
+0.9.8.1.15 (12/2/09)
+-------------------
+Fixed a bug in magic that allowed it to deal with commented triple quotes:
+
+# """
+ls
+
+Will now respond correctly...
+
+0.9.8.1.14 (11/29/09)
+-------------------
+Fixed bug in magic.py that kept magic from ever working...
+Created .desktop files to allow use in Gnome-Do's Docky...
+
+0.9.8.1.12 (11/22/2009)
+-------------------
+Fixed a bug in alias (added .lstrip())
+Fixd a bug with multi-line string continuations
+
+0.9.8.1.10 (11/5/2009)
+-------------------
+Changed local name of myPyCrust to newPyCrust
+Changed all the internal names, too...
+
+0.9.8.1.1 ()
+-------------------
+Added built-in functions sx to execute external commands
+Added built-in function alias to create magic aliases like so:
+"alias ll ls-l"
+which unlike the other built-ins is handled entirely by magic.py.
+
 0.9.7.9 (9/8/09)
 -------------------
 Finalized the naming convention so that references to shell in the new "slices"
