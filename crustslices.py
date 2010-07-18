@@ -400,8 +400,9 @@ class CrustSlicesFrame(crust.CrustFrame):
                                        'Would you like to save it first'
                                        '?' % self.buffer.name,
                                title='Save current file?',
-                               style=wx.YES_NO | wx.CANCEL | wx.NO_DEFAULT |
-                                     wx.CENTRE | wx.ICON_QUESTION )
+                               )
+                               #style=wx.YES_NO | wx.CANCEL | wx.NO_DEFAULT |
+                               #      wx.CENTRE | wx.ICON_QUESTION )
         if result.positive:
             cancel = self.bufferSave()
         else:

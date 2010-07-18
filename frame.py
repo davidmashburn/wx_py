@@ -172,7 +172,7 @@ class Frame(wx.Frame):
             m.Append(ID_SHOWTOOLS,
                      'Show &Tools\tF4',
                      'Show the filling and other tools', wx.ITEM_CHECK)
-        if self.shellName==['PySlices','SymPySlices']:
+        if self.shellName in ['PySlices','SymPySlices']:
             m.Append(ID_HIDEFOLDINGMARGIN,
                                 '&Hide Folding Margin',
                                 'Hide Folding Margin', wx.ITEM_CHECK)

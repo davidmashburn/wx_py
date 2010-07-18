@@ -827,12 +827,86 @@ def directory(parent=None, message='Choose a directory', path='', style=0,
     dialog.Destroy()
     return result
 
+class SaveCancelDialog(wx.Dialog):
+    def __init__(
+            self, parent, id=-1, message=wx.EmptyString, title=wx.EmptyString, pos=wx.DefaultPosition,
+            size=wx.DefaultSize, style=wx.DEFAULT_DIALOG_STYLE,
+            name=wx.DialogNameStr, useMetal=False,
+            ):
+
+        wx.Dialog.__init__(self,parent, id, title, pos, size, style, name)
+        
+        # This extra style can be set after the UI object has been created.
+        if 'wxMac' in wx.PlatformInfo and useMetal:
+            self.SetExtraStyle(wx.DIALOG_EX_METAL)
+        
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        
+        lblsizer = wx.BoxSizer(wx.HORIZONTAL)
+        label = wx.StaticText(self, -1, message)
+        
+        bmp = wx.ArtProvider.GetBitmap(wx.ART_QUESTION,size=(48,48))
+        stabmp = wx.StaticBitmap(self, wx.NewId(), bmp, wx.DefaultPosition, bmp.GetSize(), wx.NO_BORDER)
+        lblsizer.Add(stabmp, 0,wx.EXPAND | wx.LEFT, 12)
+        lblsizer.Add(label, 1, wx.EXPAND | wx.ALL, 12)
+        sizer.Add(lblsizer, 0, wx.LEFT|wx.ALL, 5)
+        
+        btnsizer = wx.BoxSizer(wx.HORIZONTAL)
+        
+        self.DontSaveButton = wx.Button(self,-1,label="Don't Save")
+        self.SaveButton = wx.Button(self,-1,label='Save')
+        self.CancelButton = wx.Button(self,wx.ID_CANCEL)
+        
+        self.DontSaveButton.Bind(wx.EVT_BUTTON,self.DontSave)
+        self.SaveButton.Bind(wx.EVT_BUTTON,self.Save)
+        self.Bind(wx.EVT_CHAR_HOOK,self.OnKeyDown)
+        
+        btnsizer.Add(self.DontSaveButton,wx.ALL|wx.EXPAND,5)
+        btnsizer.Add(self.SaveButton,wx.ALL|wx.EXPAND,5)
+        btnsizer.Add(self.CancelButton,wx.ALL|wx.EXPAND,5)
+        
+        sizer.Add(btnsizer, 0, wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5)
+        
+        self.focus = "Don't Save"
+        self.DontSaveButton.SetDefault()
+        self.DontSaveButton.SetFocus()
+        
+        self.SetSizer(sizer)
+        #self.SetFocus()
+        sizer.Fit(self)
+    def DontSave(self,event):
+        self.EndModal(wx.ID_NO)
+    def Save(self,event):
+        self.EndModal(wx.ID_YES)
+    def OnKeyDown(self,event):
+        key = event.GetKeyCode()
+        if key == wx.WXK_RIGHT:
+            if self.focus == "Don't Save":   self.focus = "Save"
+            elif self.focus == "Save":       self.focus = "Cancel"
+            elif self.focus == "Cancel":     pass
+        elif key == wx.WXK_LEFT:
+            if self.focus == "Don't Save":   pass
+            elif self.focus == "Save":       self.focus = "Don't Save"
+            elif self.focus == "Cancel":     self.focus = "Save"
+    
+        if self.focus == "Don't Save":   self.DontSaveButton.SetFocus()
+        elif self.focus == "Save":       self.SaveButton.SetFocus()
+        elif self.focus == "Cancel":     self.CancelButton.SetFocus()
+        event.Skip()
+#m=SaveCancelDialog(None)
+#p=m.ShowModal()
+#p==wx.ID_YES
+#p==wx.ID_NO
+#p==wx.ID_CANCEL
+
 
 def messageDialog(parent=None, message='', title='Message box',
-                  style=wx.YES_NO | wx.CANCEL | wx.CENTRE | wx.ICON_QUESTION,
+                  #style=wx.YES_NO | wx.CANCEL | wx.CENTRE | wx.ICON_QUESTION,
+                  style=wx.DEFAULT_DIALOG_STYLE | wx.CENTRE,
                   pos=wx.DefaultPosition):
     """Message dialog wrapper function."""
-    dialog = wx.MessageDialog(parent, message, title, style, pos)
+    #dialog = wx.MessageDialog(parent, message, title, style, pos)
+    dialog = SaveCancelDialog(parent=parent, message=message, title=title, pos=pos, style=style)
     result = DialogResults(dialog.ShowModal())
     dialog.Destroy()
     return result
