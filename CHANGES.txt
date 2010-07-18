@@ -1,4 +1,4 @@
-0.9.8.4.7 - 0.9.8.4.9 (7/13/2010)
+0.9.8.4.7 - 0.9.8.4.10 (7/13/2010)
 -------------------
 Created custom Save Dialog to use the good "Human Interface" practice of
 giving specific verbs to buttons (Don't Save, Save, Cancel)...

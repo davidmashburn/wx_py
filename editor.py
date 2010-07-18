@@ -867,7 +867,6 @@ class SaveCancelDialog(wx.Dialog):
         
         sizer.Add(btnsizer, 0, wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5)
         
-        self.focus = "Don't Save"
         self.DontSaveButton.SetDefault()
         self.DontSaveButton.SetFocus()
         
@@ -883,26 +882,18 @@ class SaveCancelDialog(wx.Dialog):
         # For some reason, the default behavior on Linux
         # Doesn't allow arrow navigation...
         # Manually add it back here:
-        if 'wxGTK' in wx.PlatformInfo:
-            if key == wx.WXK_RIGHT:
-                if self.focus == "Don't Save":   self.focus = "Save"
-                elif self.focus == "Save":       self.focus = "Cancel"
-                elif self.focus == "Cancel":     pass
-            elif key == wx.WXK_LEFT:
-                if self.focus == "Don't Save":   pass
-                elif self.focus == "Save":       self.focus = "Don't Save"
-                elif self.focus == "Cancel":     self.focus = "Save"
+        focus = wx.Window.FindFocus()
         
-            if self.focus == "Don't Save":   self.DontSaveButton.SetFocus()
-            elif self.focus == "Save":       self.SaveButton.SetFocus()
-            elif self.focus == "Cancel":     self.CancelButton.SetFocus()
-        event.Skip()
-#m=SaveCancelDialog(None)
-#p=m.ShowModal()
-#p==wx.ID_YES
-#p==wx.ID_NO
-#p==wx.ID_CANCEL
-
+        if key == wx.WXK_RIGHT:
+            if focus == self.DontSaveButton:  self.SaveButton.SetFocus()
+            elif focus == self.SaveButton:    self.CancelButton.SetFocus()
+            elif focus == self.CancelButton:  self.DontSaveButton.SetFocus()
+        elif key == wx.WXK_LEFT:
+            if focus == self.DontSaveButton:  self.CancelButton.SetFocus()
+            elif focus == self.SaveButton:    self.DontSaveButton.SetFocus()
+            elif focus == self.CancelButton:  self.SaveButton.SetFocus()
+        else:
+            event.Skip()
 
 def messageDialog(parent=None, message='', title='Message box',
                   #style=wx.YES_NO | wx.CANCEL | wx.CENTRE | wx.ICON_QUESTION,
