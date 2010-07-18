@@ -973,6 +973,7 @@ class SlicesShell(editwindow.EditWindow):
         
         self.SliceSelection=False
         self.runningSlice=None
+        self.readlineStartPos = 0
         
         ## NOTE:  See note at bottom of this file...
         ## #seb: File drag and drop
@@ -2433,6 +2434,11 @@ class SlicesShell(editwindow.EditWindow):
         else:
             startpos=self.PositionFromLine(startline)
         
+        # TODO: Need to adjust command so that it ignores everything
+        #       printed on the line before the user's input
+        if self.reader.isreading:
+            startpos = self.readlineStartPos
+        
         endpos=self.GetLineEndPosition(endline)
         
         # If they hit ENTER inside the current command, execute the command.
@@ -3133,6 +3139,7 @@ class SlicesShell(editwindow.EditWindow):
         self.MarkerAdd(cLine,INPUT_START)
         self.MarkerAdd(cLine,READLINE_BG)
         self.MarkerAdd(cLine,INPUT_READLINE)
+        self.readlineStartPos = self.GetCurrentPos()
         
         try:
             while not reader.input:
@@ -3516,7 +3523,10 @@ class SlicesShell(editwindow.EditWindow):
                     (self.MarkerGet(self.GetCurrentLine()) & 1<<INPUT_READLINE ):
                 return False
             start,end=self.GetIOSlice()
-            sliceStartPos=self.PositionFromLine(start)
+            if self.reader.isreading:
+                sliceStartPos=self.readlineStartPos
+            else:
+                sliceStartPos=self.PositionFromLine(start)
             sliceEndPos=self.GetLineEndPosition(end)
             """Return true if text is selected and can be cut."""
             if self.GetSelectionStart() == self.GetSelectionEnd():

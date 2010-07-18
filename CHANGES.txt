@@ -1,3 +1,13 @@
+0.9.8.4.8 (7/13/2010)
+-------------------
+Created custom Save Dialog to use the good "Human Interface" practice of
+giving specific verbs to buttons (Don't Save, Save, Cancel)...
+
+Fixed a bug in frame.py that kept the Hide Folding Markers option from displaying.
+
+Partially fixed a bug with readline. (Still problems if you delete stuff
+printed by write, not written by user).
+
 0.9.8.4.6 (6/2/2010)
 -------------------
 Merged cvs tags with new changes from wxPython.
