@@ -880,18 +880,22 @@ class SaveCancelDialog(wx.Dialog):
         self.EndModal(wx.ID_YES)
     def OnKeyDown(self,event):
         key = event.GetKeyCode()
-        if key == wx.WXK_RIGHT:
-            if self.focus == "Don't Save":   self.focus = "Save"
-            elif self.focus == "Save":       self.focus = "Cancel"
-            elif self.focus == "Cancel":     pass
-        elif key == wx.WXK_LEFT:
-            if self.focus == "Don't Save":   pass
-            elif self.focus == "Save":       self.focus = "Don't Save"
-            elif self.focus == "Cancel":     self.focus = "Save"
-    
-        if self.focus == "Don't Save":   self.DontSaveButton.SetFocus()
-        elif self.focus == "Save":       self.SaveButton.SetFocus()
-        elif self.focus == "Cancel":     self.CancelButton.SetFocus()
+        # For some reason, the default behavior on Linux
+        # Doesn't allow arrow navigation...
+        # Manually add it back here:
+        if 'wxGTK' in wx.PlatformInfo:
+            if key == wx.WXK_RIGHT:
+                if self.focus == "Don't Save":   self.focus = "Save"
+                elif self.focus == "Save":       self.focus = "Cancel"
+                elif self.focus == "Cancel":     pass
+            elif key == wx.WXK_LEFT:
+                if self.focus == "Don't Save":   pass
+                elif self.focus == "Save":       self.focus = "Don't Save"
+                elif self.focus == "Cancel":     self.focus = "Save"
+        
+            if self.focus == "Don't Save":   self.DontSaveButton.SetFocus()
+            elif self.focus == "Save":       self.SaveButton.SetFocus()
+            elif self.focus == "Cancel":     self.CancelButton.SetFocus()
         event.Skip()
 #m=SaveCancelDialog(None)
 #p=m.ShowModal()
