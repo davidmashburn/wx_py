@@ -72,7 +72,7 @@ SimpleSubstitutionTable = [i for i in unicodeConversionTable if i[3]=='SimpleSub
 SymbolTable = [i for i in unicodeConversionTable if i[3]=='Symbol']
 InfixOperatorTable = [i for i in unicodeConversionTable if i[3]=='InfixOperator']
 
-ESC_SYMBOL = unichr(0x0022ee).encode('utf-8')
+ESC_SYMBOL = unichr(0x1392) # Changed to unicode from utf-8
 nameAddOn = 'SYMPYSL_'
 
 # ##################################################
@@ -100,10 +100,11 @@ ToName[unichr(SpecialEscapeCharacterTable[0][0])] = \
                                        SpecialEscapeCharacterTable[0][1]
 
 # For loading and conversion of output from interpreter
-FromName = dict([ [i[1],unichr(i[0]).encode('utf-8')] for i in
+# No longer convert to utf-8 due to problem on windows...
+FromName = dict([ [i[1],unichr(i[0])] for i in
   DisplayTable + SimpleSubstitutionTable + SymbolTable + InfixOperatorTable ])
 FromName[SpecialEscapeCharacterTable[0][1]] = \
-               unichr(SpecialEscapeCharacterTable[0][0]).encode('utf-8')
+               unichr(SpecialEscapeCharacterTable[0][0])
 
 for i in DisplayTable+SimpleSubstitutionTable+SymbolTable+InfixOperatorTable:
     for alias in i[2]:

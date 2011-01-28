@@ -1,3 +1,8 @@
+0.9.8.5 - 0.9.8.5.2 (1/16/2011)
+-------------------
+Changed magic to auto-transform strings to ''' ''' instead of " ".
+The quotes were conflicting with path name quotes for shell commands...
+
 0.9.8.4.7 - 0.9.8.5 (7/13/2010)
 -------------------
 Created custom Save Dialog to use the good "Human Interface" practice of

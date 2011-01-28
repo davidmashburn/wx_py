@@ -13,7 +13,7 @@ from wx.py.symbolConversionDicts import infixOperatorNames, \
 
 nameAddOn = 'SYMPYSL_'
 
-ESC_SYMBOL = unichr(0x0022ee).encode('utf-8')
+ESC_SYMBOL = unichr(0x1392) # Changed to unicode from utf-8 # changed to a new character...
 
 # Strategy for conversion of Binary Operators to functions...
 # 1 -- Replace the unicode character with one or another binary operator
@@ -160,7 +160,7 @@ def ASTWithConversion(s):
     bo2f=BinOp2Function()
     for name in names:
         if len(coords[name])>0:
-            bo2f.funcName = '__'+ToName[FromName[name].decode('utf-8')]+'__'
+            bo2f.funcName = '__'+ToName[FromName[name]]+'__'
             bo2f.astOp = precedence2astName[NameToInfixAstSubstitute[name]]
             bo2f.coords=coords[name]
             mod = bo2f.visit(mod)
@@ -171,7 +171,7 @@ def ASTWithConversion(s):
 # Attempts to use the dictionaries in symbolConversionData to convert ascii shorthand into a unicode character
 def Ascii2Unicode(ascStr):
     try:
-        newStr = FromName[ascStr]
+        newStr = FromName[ascStr] # No longer utf-8!!
     except KeyError:
         newStr = ascStr
         print "name not found"

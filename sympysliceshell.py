@@ -1813,7 +1813,11 @@ class SlicesShell(editwindow.EditWindow):
                 event.Skip()
             elif self.CanEdit():
                 if not self.CheckForAutoSymbolReplacement():
-                    self.write(unichr(0x1022ee))
+                    self.write(ESC_SYMBOL) # Changed this from 0x1022ee
+                    ######## TESTING ##########
+                    #self.write(unichr(0x04e8)) # --pass on Ubuntu # -- pass on Windows
+                    #self.write('\xd3\xa8') # --pass on Ubuntu # -- fail on Windows
+                    #self.write('\xe2\x8b\xae') # --pass on Ubuntu # -- fail on Windows
         # Clear the current command
         elif key == wx.WXK_BACK and controlDown and shiftDown:
             self.clearCommand()
@@ -2118,9 +2122,9 @@ class SlicesShell(editwindow.EditWindow):
     def CheckForAutoSymbolReplacement(self):
         # Use UTF-8 only
         lineTxt = unicode(self.GetCurLine()[0]).encode('utf-8')
-        if lineTxt.count(ESC_SYMBOL) > 0:
+        if lineTxt.count(ESC_SYMBOL.encode('utf-8')) > 0:
             linePos=self.PositionFromLine(self.GetCurrentLine())
-            escPos = lineTxt.find(ESC_SYMBOL) + linePos
+            escPos = lineTxt.find(ESC_SYMBOL.encode('utf-8')) + linePos
             cpos = self.GetCurrentPos()
             if cpos==escPos or cpos==escPos+1:
                 self.SetSelection(escPos,escPos+3)
@@ -2131,10 +2135,10 @@ class SlicesShell(editwindow.EditWindow):
                 self.SetSelection(startPos,endPos)
                 startPos -= linePos
                 endPos -= linePos
-                replace = lineTxt[startPos:endPos].replace(ESC_SYMBOL,'')
-                uniReplace = symbolConversion.Ascii2Unicode(replace)
+                replace = lineTxt[startPos:endPos].replace(ESC_SYMBOL.encode('utf-8'),'')
+                uniReplace = symbolConversion.Ascii2Unicode(replace).encode('utf-8')
                 #print lineTxt,[startPos,endPos],replace,uniReplace
-                self.ReplaceSelection(uniReplace)
+                self.ReplaceSelection(uniReplace.decode('utf-8'))
             return True
         else:
             return False
