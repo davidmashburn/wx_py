@@ -10799,7 +10799,7 @@ unicodeConversionTable = [
   [ 0x2a2c, 'MinusSignWithRisingDots', [], 'Display', None],
   [ 0x2a2d, 'PlusSignInLeftHalfCircle', [], 'Display', None],
   [ 0x2a2e, 'PlusSignInRightHalfCircle', [], 'Display', None],
-  [ 0x2a2f, 'VectorOrCrossProduct', [], 'Display', None],
+  [ 0x2a2f, 'VectorOrCrossProduct', ['cross','crossProduct'], 'InfixOperator', '*'],
   [ 0x2a30, 'MultiplicationSignWithDotAbove', [], 'Display', None],
   [ 0x2a31, 'MultiplicationSignWithUnderbar', [], 'Display', None],
   [ 0x2a32, 'SemidirectProductWithBottomClosed', [], 'Display', None],

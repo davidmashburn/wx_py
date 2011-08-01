@@ -1,3 +1,19 @@
+0.9.8.7 (6/23/2011)
+-------------------
+Added a couple more items to the symbol table for SymPySlices
+Project seems to have stabilized; no new bugs found.
+
+0.9.8.6 (1/17/2011)
+-------------------
+In SymPySlices, changed writen unicode characters from utf-8 directly to unicode
+because of a bug in Windows version
+Affected variables and functions:
+* ESC_SYMBOL (DictWriter and symbolConversion)
+* FromName (Dicts)
+* Ascii2Unicode
+* FormatAsciiForDisplay
+* CheckForAutoSymbolReplacement
+
 0.9.8.5 - 0.9.8.5.2 (1/16/2011)
 -------------------
 Changed magic to auto-transform strings to ''' ''' instead of " ".
