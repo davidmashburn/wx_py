@@ -1,3 +1,10 @@
+0.9.8.8 - 0.9.8.2) (1/17/2012)
+-------------------
+Added a comment you can change to reveal a blank screen on startup.
+Made svg icons and remade the pngs.
+Made the shell notify the OS every time a command is finished (helpful
+with long-running processes so you can check them visually from the os).
+
 0.9.8.7 (6/23/2011)
 -------------------
 Added a couple more items to the symbol table for SymPySlices
