@@ -1,4 +1,4 @@
-0.9.8.8 - 0.9.8.2) (1/17/2012)
+0.9.8.8 - 0.9.8.3) (1/17/2012)
 -------------------
 Added a comment you can change to reveal a blank screen on startup.
 Made svg icons and remade the pngs.
