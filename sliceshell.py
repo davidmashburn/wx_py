@@ -616,6 +616,7 @@ class SlicesShell(editwindow.EditWindow):
                  hideFoldingMargin=False, *args, **kwds):
         """Create Shell instance."""
         editwindow.EditWindow.__init__(self, parent, id, pos, size, style)
+        self.parent=parent
         self.wrap()
         if locals is None:
             import __main__
@@ -2365,7 +2366,7 @@ class SlicesShell(editwindow.EditWindow):
             pos=self.GetLineEndPosition(self.syntaxErrorRealLine)
             self.SetCurrentPos(pos)
             self.SetSelection(pos,pos)
-    
+        self.parent.RequestUserAttention()
     # Not Used!!
     def getMultilineCommand(self, rstrip=True):
         """Extract a multi-line command from the editor.
@@ -3578,6 +3579,7 @@ class SlicesShell(editwindow.EditWindow):
         ioStartLines=[0]
         ioStartTypes=[]
         removeComment=False
+        w=''
         
         # Read the initial three (or four) lines that have version and marker information
         line=fid.readline()

@@ -41,7 +41,7 @@ class CrustSlices(crust.Crust):
                  *args, **kwds):
         """Create CrustSlices instance."""
         wx.SplitterWindow.__init__(self, parent, id, pos, size, style, name)
-
+        self.parent=parent
         # Turn off the tab-traversal style that is automatically
         # turned on by wx.SplitterWindow.  We do this because on
         # Windows the event for Ctrl-Enter is stolen and used as a
@@ -100,6 +100,8 @@ class CrustSlices(crust.Crust):
         self.Bind(wx.EVT_SIZE, self.SplitterOnSize)
         self.Bind(wx.EVT_SPLITTER_SASH_POS_CHANGED, self.OnChanged)
         self.Bind(wx.EVT_SPLITTER_DCLICK, self.OnSashDClick)
+    def RequestUserAttention(self,*args,**kwds):
+        self.parent.RequestUserAttention(*args,**kwds)
 
 class CrustSlicesFrame(crust.CrustFrame):
     """Frame containing all the PySlices components."""
@@ -153,6 +155,17 @@ class CrustSlicesFrame(crust.CrustFrame):
         
         if filename!=None:
             self.bufferOpen(filename)
+        ################ XXXXXXXXXXXXXXXXXXXX MANUAL OVERRIDE FOR DEVELOPER ONLY! XXXXXXXXXXXXXXXXXXX #####################
+        # This presents a completely blank notebook on startup
+        #else: 
+        #    self.sliceshell.clear()
+        #    self.SetTitle( 'PySlices')
+        #    self.sliceshell.NeedsCheckForSave=False
+        #    self.sliceshell.SetSavePoint()
+        #    self.buffer.doc = document.Document()
+        #    self.buffer.name = 'This shell'
+        #    self.buffer.modulename = self.buffer.doc.filebase
+        ################ XXXXXXXXXXXXXXXXXXXX MANUAL OVERRIDE FOR DEVELOPER ONLY! XXXXXXXXXXXXXXXXXXX #####################
         
         self.Bind(wx.EVT_IDLE, self.OnIdle)
 
