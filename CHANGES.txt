@@ -1,3 +1,8 @@
+0.9.8.9 (3/13/2012)
+-------------------
+Updated the .ico files and added postinstall script to build windows
+Desktop Shortcuts. First build of exe installers.
+
 0.9.8.8 - 0.9.8.3) (1/17/2012)
 -------------------
 Added a comment you can change to reveal a blank screen on startup.
