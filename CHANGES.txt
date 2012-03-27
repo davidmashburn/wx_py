@@ -1,3 +1,7 @@
+0.9.8.10 (3/27/2012)
+-------------------
+Fixed a bug when loading SymPySlices Files
+
 0.9.8.9 (3/13/2012)
 -------------------
 Updated the .ico files and added postinstall script to build windows
