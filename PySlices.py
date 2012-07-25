@@ -28,7 +28,7 @@ class App(wx.App):
     def OnInit(self):
         import os
         import wx
-        from wx import py
+        import crustslices
         
         self.SetAppName("pyslices")
         confDir = wx.StandardPaths.Get().GetUserDataDir()
@@ -38,7 +38,7 @@ class App(wx.App):
         self.config = wx.FileConfig(localFilename=fileName)
         self.config.SetRecordDefaults(True)
         
-        self.frame = py.crustslices.CrustSlicesFrame(config=self.config, dataDir=confDir,
+        self.frame = crustslices.CrustSlicesFrame(config=self.config, dataDir=confDir,
                                                      filename=self.filename)
 ##        self.frame.startupFileName = os.path.join(confDir,'pycrust_startup')
 ##        self.frame.historyFileName = os.path.join(confDir,'pycrust_history')

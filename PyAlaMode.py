@@ -6,7 +6,7 @@ __cvsid__ = "$Id: PyAlaMode.py 63480 2010-02-14 05:34:39Z RD $"
 __revision__ = "$Revision: 63480 $"[11:-2]
 
 import wx
-from wx import py
+import editor
 
 import os
 import sys
@@ -20,7 +20,7 @@ class App(wx.App):
 
     def OnInit(self):
         wx.InitAllImageHandlers()
-        self.frame = py.editor.EditorNotebookFrame(filename=self.filename)
+        self.frame = editor.EditorNotebookFrame(filename=self.filename)
         self.frame.Show()
         self.SetTopWindow(self.frame)
         return True

@@ -28,8 +28,7 @@ class App(wx.App):
     def OnInit(self):
         import os
         import wx
-        from wx.py import sympycrustslices
-        from wx import py
+        import sympycrustslices
         
         self.SetAppName("sympyslices")
         confDir = wx.StandardPaths.Get().GetUserDataDir()

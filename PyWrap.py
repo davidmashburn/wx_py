@@ -7,14 +7,14 @@ __cvsid__ = "$Id: PyWrap.py 63480 2010-02-14 05:34:39Z RD $"
 __revision__ = "$Revision: 63480 $"[11:-2]
 
 import wx
-from wx import py
+import crust
 
 import os
 import sys
 
 def wrap(app):
     wx.InitAllImageHandlers()
-    frame = py.crust.CrustFrame()
+    frame = crust.CrustFrame()
     frame.SetSize((750, 525))
     frame.Show(True)
     frame.shell.interp.locals['app'] = app

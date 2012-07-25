@@ -26,7 +26,7 @@ class App(wx.App):
     def OnInit(self):
         import os
         import wx
-        from wx import py
+        import sliceshell
 
         self.SetAppName("pysliceshell")
         confDir = wx.StandardPaths.Get().GetUserDataDir()
@@ -36,7 +36,7 @@ class App(wx.App):
         self.config = wx.FileConfig(localFilename=fileName)
         self.config.SetRecordDefaults(True)
 
-        self.frame = py.sliceshell.SlicesShellFrame(config=self.config,
+        self.frame = sliceshell.SlicesShellFrame(config=self.config,
                                                     dataDir=confDir,
                                                     filename=self.filename)
         self.frame.Show()

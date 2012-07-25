@@ -12,7 +12,7 @@ except NameError:
     import sets.Set as set
 
 SYMPYSL_Integral_ = sympy.integrate
-SYMPYSL_NarySummation_ = sympy.sum
+SYMPYSL_NarySummation_ = sympy.summation
 SYMPYSL_PartialDifferential_ = sympy.diff
 SYMPYSL_Infinity_ = sympy.oo
 SYMPYSL_GreekSmallLetterPi_ = sympy.pi

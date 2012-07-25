@@ -6,10 +6,10 @@ __author__ = "David N. Mashburn <david.n.mashburn@gmail.com>"
 import ast
 from ast import Call, Load, Name, copy_location
 import unicodedata
-from wx.py.symbolConversionDicts import infixOperatorNames, \
-                                             NameToInfixAstSubstitute, \
-                                          ToName, FromName,ToInterpreter
-#from wx.py.symbolConversionData import *
+from symbolConversionDicts import infixOperatorNames, \
+                                  NameToInfixAstSubstitute, \
+                                  ToName, FromName,ToInterpreter
+#from symbolConversionData import *
 
 nameAddOn = 'SYMPYSL_'
 

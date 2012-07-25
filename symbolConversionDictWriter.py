@@ -1,10 +1,10 @@
 # With so many values to index, I will have to automatically look for anything of the form SYMPYSL_*_
 #   and then use dictionary indexing to find the result for any reasonable speed
 # See MakeUnicodeDataFile.pyslices for some prototype file tools...
-from wx.py.symbolConversionTable import unicodeConversionTable
+from symbolConversionTable import unicodeConversionTable
 import os
 import ast
-#from wx.py import symbolConversionNew
+#import symbolConversionNew
 
 nameAddOn = 'SYMPYSL_'
 
@@ -159,7 +159,7 @@ if __name__ == '__main__':
 
 def QuickTest():
     # A quick test of the modified parts of the symbolConversionTable:
-    from wx.py import symbolConversionTable
+    import symbolConversionTable
     for i in symbolConversionTable.unicodeConversionTable:
         if i[2]!=[] or i[3] not in ['Display','Ascii']:
             print i

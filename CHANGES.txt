@@ -7,7 +7,7 @@ Fixed a bug when loading SymPySlices Files
 Updated the .ico files and added postinstall script to build windows
 Desktop Shortcuts. First build of exe installers.
 
-0.9.8.8 - 0.9.8.3) (1/17/2012)
+0.9.8.3 - 0.9.8.8) (1/17/2012)
 -------------------
 Added a comment you can change to reveal a blank screen on startup.
 Made svg icons and remade the pngs.
@@ -35,7 +35,7 @@ Affected variables and functions:
 Changed magic to auto-transform strings to ''' ''' instead of " ".
 The quotes were conflicting with path name quotes for shell commands...
 
-0.9.8.4.7 - 0.9.8.5 (7/13/2010)
+0.9.8.4.7 - 0.9.8.5 (7/14/2010)
 -------------------
 Created custom Save Dialog to use the good "Human Interface" practice of
 giving specific verbs to buttons (Don't Save, Save, Cancel)...
@@ -250,10 +250,12 @@ Fixed a bug with Output_BG
 -------------------
 Made output have a slight-blue background
 Added a tutorial that can be disabled in Options->Startup.
-Added "Shell Mode" which uses >>> and ... markers for input slices and uses two returns for command execution
+Added "Shell Mode" which uses >>> and ... markers for input slices and 
+                                  uses two returns for command execution
 Changed manual completion keybindings.
 Cleaned up keybinding help.
-Made Items in Options->Startup menu automatically save to the config file (since they don't affect anything until startup)
+Made Items in Options->Startup menu automatically save to the config file
+                        (since they don't affect anything until startup)
 Major code cleanup, removal of much dead code, shortening of very long lines, etc...
 
 0.9.6.9 (7/9/2009)

@@ -905,7 +905,7 @@ class SlicesShell(editwindow.EditWindow):
         except ImportError:
             print 'Sympy must be installed to use SymPySlices!'
             self.exit()
-        from wx.py import SymPySlicesDefaults
+        import SymPySlicesDefaults
         self.interp.push('from __future__ import division\n')
         self.interp.push('import sympy\n')
         
