@@ -1,0 +1,2 @@
+recursive-include wx_py *.png
+recursive-include wx_py *.ico

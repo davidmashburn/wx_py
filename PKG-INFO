@@ -1,0 +1,24 @@
+Metadata-Version: 1.1
+Name: wx_py
+Version: 0.9.8.11
+Author: David Mashburn / Patrick O'Brian
+Author-email: david n mashburn at gmail com
+Home-page: http://code.google.com/p/wxpysuite/
+Download-url: UNKNOWN
+Summary: Py Suite including PyCrust and a revamped version, PySlices
+License: wxWidgets (basically LGPL)
+Description: An updated version of the popular PyCrust graphical shell that includes
+        PySlices, a notebook-interface version of PyCrust. Like the original PyCrust,
+        this requires wxPython to be installed.
+        
+        An experimental shell called SymPySlices is also available that works with (and
+        requires) sympy. It also uses the ast module for dynamic symbol creation and
+        requires Python 2.6.
+        
+        The PySuite updates have now also been included with the latest wxPython (import
+        wx.py)!
+        
+        For the old Py Suite homepage, visit: http://www.wxpython.org/py.php
+Keywords: notebook, shell, pyslices, pycrust, wxPython,
+Platform: Windows, Mac OS X, Linux, possibly others
+Classifier: Development Status :: 4 - Beta
