@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+<mime-type type="application/pyslices">
+<comment>PySlices File</comment>
+<comment xml:lang="bg">PySlices File</comment>
+<comment xml:lang="cs">PySlices File</comment>
+<comment xml:lang="de">PySlices File</comment>
+<comment xml:lang="es">PySlices File</comment>
+<comment xml:lang="eu">PySlices File</comment>
+<comment xml:lang="hu">PySlices File</comment>
+<comment xml:lang="it">PySlices File</comment>
+<comment xml:lang="ko">PySlices File</comment>
+<comment xml:lang="nb">PySlices File</comment>
+<comment xml:lang="nl">PySlices File</comment>
+<comment xml:lang="nn">PySlices File</comment>
+<comment xml:lang="sv">PySlices File</comment>
+<comment xml:lang="uk">PySlices File</comment>
+<comment xml:lang="vi">PySlices File</comment>
+<glob pattern="*.pyslices"/>
+<alias type="application/pyslices"/>
+</mime-type>
+</mime-info>

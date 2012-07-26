@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+<mime-type type="application/sympyslices">
+<comment>SymPySlices File</comment>
+<comment xml:lang="bg">SymPySlices File</comment>
+<comment xml:lang="cs">SymPySlices File</comment>
+<comment xml:lang="de">SymPySlices File</comment>
+<comment xml:lang="es">SymPySlices File</comment>
+<comment xml:lang="eu">SymPySlices File</comment>
+<comment xml:lang="hu">SymPySlices File</comment>
+<comment xml:lang="it">SymPySlices File</comment>
+<comment xml:lang="ko">SymPySlices File</comment>
+<comment xml:lang="nb">SymPySlices File</comment>
+<comment xml:lang="nl">SymPySlices File</comment>
+<comment xml:lang="nn">SymPySlices File</comment>
+<comment xml:lang="sv">SymPySlices File</comment>
+<comment xml:lang="uk">SymPySlices File</comment>
+<comment xml:lang="vi">SymPySlices File</comment>
+<glob pattern="*.sympyslices"/>
+<alias type="application/sympyslices"/>
+</mime-type>
+</mime-info>

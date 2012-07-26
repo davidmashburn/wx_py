@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=PyShell
+Name[en_US]=PyShell
+Comment=None
+Exec=/usr/local/bin/pyshell %f
+Type=Application
+Terminal=false
+Icon=/usr/local/share/pixmaps/PyCrust.svg
+Icon[en_US]=/usr/local/share/pixmaps/PyCrust.svg
+StartupNotify=true
+MimeType=text/x-python;

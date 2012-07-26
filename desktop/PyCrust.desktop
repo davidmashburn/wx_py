@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=PyCrust
+Name[en_US]=PyCrust
+Comment=None
+Exec=/usr/local/bin/pycrust %f
+Type=Application
+Terminal=false
+Icon=/usr/local/share/pixmaps/PyCrust.svg
+Icon[en_US]=/usr/local/share/pixmaps/PyCrust.svg
+StartupNotify=true
+MimeType=text/x-python;

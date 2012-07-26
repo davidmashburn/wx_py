@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=PySlicesShell
+Name[en_US]=PySlicesShell
+Comment=None
+Exec=/usr/local/bin/pysliceshell %f
+Type=Application
+Terminal=false
+Icon=/usr/local/share/pixmaps/PySlices.svg
+Icon[en_US]=/usr/local/share/pixmaps/PySlices.svg
+StartupNotify=true
+MimeType=text/x-python;

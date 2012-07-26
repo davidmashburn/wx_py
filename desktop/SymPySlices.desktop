@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=SymPySlices
+Name[en_US]=SymPySlices
+Comment=None
+Exec=/usr/local/bin/sympyslices %f
+Type=Application
+Terminal=false
+Icon=/usr/local/share/pixmaps/SymPySlices.svg
+Icon[en_US]=/usr/local/share/pixmaps/SymPySlices.svg
+StartupNotify=true
+MimeType=text/x-python;

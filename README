@@ -1,1 +1,105 @@
-In Terminal, ran python setup.py sdist upload to load to PyPI...
+=Py Suite (PyCrust, etc.)=
+
+The Py Suite in wxPython, originally written by Patrick O'Brien, was and is an extremely popular programming shell for the Python programming language.
+Old website: http://www.wxpython.org/py.php
+It has been used by multiple projects (Stani's Python Editor, many Enthought tools, etc...) and supports calltips, history storage, code completion, and many other features in a solid, GUI based python shell.
+
+I decided in 2008 after using Pycrust to program Python for a couple of years that I wanted to modify the shell to suit my needs.  I had been used to working with Mathematica, so I adore a notebook-style interface where you can write multiple lines of code that can be run and rerun in chunks.  After using the following "if 1:" construct in PyCrust for over a year:
+
+{{{
+if 1:
+    <Many lines indented code...>
+}}}
+
+I finally decided to modify the shell myself to support real code blocks, and PySlices was born into the Py family...  It supports input and output "slices" (grouped lines of code / output text), re-running of old commands IN PLACE, multiple commands per "slice", and even saving and loading the .pyslices format (which can be renamed .py and used directly as python code)!
+
+Also notable is that these patches add some often-coveted functionality to BOTH PyCrust and PySlices -- support for ipython-style magic features!
+
+Typing a space for functions:
+  "f 1" will auto-convert to "f(1)"
+Support for unix-style directory commands:
+  "cd", "ls", and "pwd" all work as expected
+Support for quick shell commands with the ! mark:
+  "!echo test" will print "test" in the shell
+
+There is a lot more to say, but I've said enough... try it out, and read the tutorials!
+
+If you want to install, you will need python as well as wxPython 2.8 or later.
+
+
+----
+Also, if you notice, there is also an experimental shell called SymPySlices.
+SymPySlices REQUIRES *sympy*, and is still somewhat experimental.  It also uses the ast module and REQUIRES *Python 2.6 or later*.
+
+That said, it is really cool!
+It is basically a hack to allow the use of unicode characters AS python code
+It also has a setting to allow automatic symbol creation from unknown variables.
+
+so, I could write:
+
+∫(x²,x)
+
+and the result would be `x**3/3`  !
+
+The entry method is to press the escape character and type a shortcuts phrase, ie:
+
+<ESC>theta<ESC>
+
+yeilds θ !
+
+A large number of latex names are already supported, but every unicode character is supported somehow (see symbolConversionTable.py for a complete listing of names).
+
+Files are actually saved in a plain text (ascii) format to avoid conversion issues.
+
+SymPySlices also has some (slightly flaky) support for infix operators...
+
+So, I could define a dot product operator to allow me to do the following:
+
+[1,2,3,4]⋅[4,3,2,1]
+
+yeilds 20.
+
+Note that intergal and dot product are actually pre-defined using SymPySlicesDefaults.py, now included in wxpysuite.  These behaviors can be easily overridden using:
+
+`∫ = newFunction`
+and
+`__DotOperator__ = newFunction`
+
+There are a lot more symbols defined, so dig in and check them out!
+
+My basic hope for this aspect of the project is to spread some ideas about
+how to use unicode and python together with sympy to try to create computer
+algebra system that is a little bit simpler than SAGE.
+
+----
+==Installing and Running==
+You can either install from here or from PyPI (package name is wx_py).
+To install this version, unpack the tar.gz.
+At the command line, go to the new directory and type:
+"python setup.py install"
+on linux and mac, you may need to type:
+"sudo python setup.py install"
+
+Run PyCrust with this command:        python -m wx_py.PyCrust
+Run PySlices with this command:       python -m wx_py.PySlices
+Run SymPySlices with this command:    python -m wx_py.SymPySlices
+
+To see a sample configuration file for SymPySlices, you may want to look at SymPySlicesDefaults.py (in the Downloads section).  If you copy these contents into the startup script (Options Menu -> Startup -> Edit Startup Script) then SymPySlices' operators will behave the way I've described above.  I'm still working out what the true default behavior should be and I want people to be able to customize this, so I have left this out of the installed version intentionally.
+
+----
+==Screenshots==
+http://wxpysuite.googlecode.com/svn/trunk/PyCrustScreenshot.png
+
+http://wxpysuite.googlecode.com/svn/trunk/PySlicesScreenshot.png
+
+----
+===Other Projects===
+Just wanted to note that there are other cool projects out there, too.
+IPython, SAGE, Symbide, and Reinteract are some of the best!  SAGE is an especially promising project!
+
+----
+
+BTW, I have created the module with the name wx_py so it will be trivial to convert code to wx.py if and when you update to a version included with wxPython itself (not that you should even use Py Suite code in your programming...)
+
+Also, a legality: I listed this a LGPL, but it is really under the wxWidgets licence (essentially LGPL)
+
