@@ -11,5 +11,5 @@ setup( name = 'wx_py',
        scripts = ['postinstall.py'],
        packages = ['wx_py'],
        package_dir={'wx_py': 'wx_py'},
-       package_data={'wx_py': ['*.ico','*.png','*.svg']},
+       package_data={'wx_py': ['icons/*']},
      )
