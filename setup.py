@@ -12,4 +12,7 @@ setup( name = 'wx_py',
        packages = ['wx_py'],
        package_dir={'wx_py': 'wx_py'},
        package_data={'wx_py': ['icons/*']},
+       description='',
+       long_description=open('README.rst').read(),
+       install_requires['wx>=2.8']
      )
