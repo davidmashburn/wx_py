@@ -2,8 +2,8 @@
 .. wikir README.rst README
 .. By the way, I modified wikir
 
-Py Suite (PyCrust, etc.)
-========================
+Py Suite (PySlices, PyCrust, etc.)
+==================================
 
 The Py Suite in wxPython, originally written by Patrick O'Brien, was and is an extremely popular programming shell for the Python programming language.
 
