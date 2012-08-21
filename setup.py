@@ -4,7 +4,6 @@ from distutils.core import setup
 
 setup( name = 'wx_py',
        version = '0.9.8.11',
-       description = 'Py Suite including PyCrust and a revamped version, PySlices',
        author = "David Mashburn / Patrick O'Brian",
        author_email = 'david.n.mashburn@gmail.com',
        url = 'http://www.wxpython.org/py.php',
@@ -12,7 +11,7 @@ setup( name = 'wx_py',
        packages = ['wx_py'],
        package_dir={'wx_py': 'wx_py'},
        package_data={'wx_py': ['icons/*']},
-       description='',
+       description = 'Py Suite including PyCrust and a revamped version, PySlices',
        long_description=open('README.rst').read(),
-       install_requires['wx>=2.8']
+       install_requires=['wx>=2.8']
      )
