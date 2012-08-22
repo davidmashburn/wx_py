@@ -13,5 +13,5 @@ setup( name = 'wx_py',
        package_data={'wx_py': ['icons/*']},
        description = 'Py Suite including PyCrust and a revamped version, PySlices',
        long_description=open('README.rst').read(),
-       install_requires=['wx>=2.8']
+       install_requires=['wxPython>=2.8']
      )
