@@ -1,8 +1,8 @@
 """Base frame with menu."""
 
 __author__ = "Patrick K. O'Brien <pobrien@orbtech.com>"
-__cvsid__ = "$Id: frame.py 63480 2010-02-14 05:34:39Z RD $"
-__revision__ = "$Revision: 63480 $"[11:-2]
+__cvsid__ = "$Id$"
+__revision__ = "$Revision$"[11:-2]
 
 import wx
 import os
@@ -860,7 +860,7 @@ class ShellFrameMixin:
                 f.close()
             except:
                 d = wx.MessageDialog(self, "Error saving history file.",
-                                     "Error", wx.ICON_EXCLAMATION)
+                                     "Error", wx.ICON_EXCLAMATION|wx.OK)
                 d.ShowModal()
                 d.Destroy()
                 raise
@@ -878,7 +878,7 @@ class ShellFrameMixin:
                                     history=self.shell.history)
                 except:
                     d = wx.MessageDialog(self, "Error loading history file.",
-                                         "Error", wx.ICON_EXCLAMATION)
+                                         "Error", wx.ICON_EXCLAMATION|wx.OK)
                     d.ShowModal()
                     d.Destroy()
 
@@ -937,7 +937,7 @@ class ShellFrameMixin:
                 f.close()
             except:
                 d = wx.MessageDialog(self, "Error saving startup file.",
-                                     "Error", wx.ICON_EXCLAMATION)
+                                     "Error", wx.ICON_EXCLAMATION|wx.OK)
                 d.ShowModal()
                 d.Destroy()
 

@@ -1,22 +1,23 @@
 """Support for icons."""
 
 __author__ = "Patrick K. O'Brien <pobrien@orbtech.com> / David Mashburn <david.n.mashburn@gmail.com>"
-__cvsid__ = "$Id: images.py 63480 2010-02-14 05:34:39Z RD $"
-__revision__ = "$Revision: 63480 $"[11:-2]
+__cvsid__ = "$Id$"
+__revision__ = "$Revision$"[11:-2]
 
 import wx
 import cStringIO
 
+
 def getPyIcon(shellName='PyCrust'):
     icon = wx.EmptyIcon()
-    icon.CopyFromBitmap(getPyBitmap(shellName=shellName))
+    icon.CopyFromBitmap(getPyBitmap(shellName))
     return icon
 
 def getPyBitmap(shellName='PyCrust'):
-    return wx.BitmapFromImage(getPyImage(shellName=shellName))
+    return wx.BitmapFromImage(getPyImage(shellName))
 
 def getPyImage(shellName='PyCrust'):
-    stream = cStringIO.StringIO(getPyData(shellName=shellName))
+    stream = cStringIO.StringIO(getPyData(shellName))
     return wx.ImageFromStream(stream)
 
 def getPyData(shellName='PyCrust'):

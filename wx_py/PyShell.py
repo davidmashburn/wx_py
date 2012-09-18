@@ -9,8 +9,8 @@ import __main__
 original = __main__.__dict__.keys()
 
 __author__ = "Patrick K. O'Brien <pobrien@orbtech.com>"
-__cvsid__ = "$Id: PyShell.py 63480 2010-02-14 05:34:39Z RD $"
-__revision__ = "$Revision: 63480 $"[11:-2]
+__cvsid__ = "$Id$"
+__revision__ = "$Revision$"[11:-2]
 
 import wx
 import os

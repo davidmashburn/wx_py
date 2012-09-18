@@ -34,7 +34,7 @@ def magicSingle(command,useSymbols=False):
     elif command[:6] == 'alias ':
         c = command[6:].lstrip().split(' ')
         if len(c)<2:
-            print 'Not enough arguments for alias!'
+            #print 'Not enough arguments for alias!'
             command = ''
         else:
             n,v = c[0],' '.join(c[1:])
