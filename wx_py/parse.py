@@ -23,6 +23,7 @@ def testForContinuations(codeBlock,ignoreErrors=False):
     indentNumber=[0]
     
     stringMarks = ['"""',"'''",'"',"'"]
+    escapedStringMarks = ["\\'",'\\"']
     openMarks = ['(','[','{']
     closeMarks = [')',']','}']
     paraMarkDict = { '(':')', '[':']', '{':'}' }
@@ -69,8 +70,8 @@ def testForContinuations(codeBlock,ignoreErrors=False):
         
         commented=False
         nonCommentLength=len(l)
-                
-        result = re.finditer('"""'+'|'+"'''" + r'''|"|'|\"|\'|\(|\)|\[|\]|\{|\}|#''',l)
+        
+        result = re.finditer(r'\\\\'+'|'+r"\\'"+'|'+r'\\"'+'|'+'"""'+'|'+"'''" + r'''|"|'|\"|\'|\(|\)|\[|\]|\{|\}|#''',l)
         for r in result:
             j = r.group()
             
