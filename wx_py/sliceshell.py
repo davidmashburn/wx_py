@@ -178,6 +178,17 @@ class SlicesShellFrame(frame.Frame, frame.ShellFrameMixin):
         
         if filename!=None:
             self.bufferOpen(filename)
+        ################ XXXXXXXXXXXXXXXXXXXX MANUAL OVERRIDE FOR DEVELOPER ONLY! XXXXXXXXXXXXXXXXXXX #####################
+        # This presents a completely blank notebook on startup
+        #else: 
+        #    self.sliceshell.clear()
+        #    self.SetTitle( 'PySlices')
+        #    self.sliceshell.NeedsCheckForSave=False
+        #    self.sliceshell.SetSavePoint()
+        #    self.buffer.doc = document.Document()
+        #    self.buffer.name = 'This shell'
+        #    self.buffer.modulename = self.buffer.doc.filebase
+        ################ XXXXXXXXXXXXXXXXXXXX MANUAL OVERRIDE FOR DEVELOPER ONLY! XXXXXXXXXXXXXXXXXXX #####################
         
         self.Bind(wx.EVT_IDLE, self.OnIdle)
 
@@ -328,14 +339,14 @@ class SlicesShellFrame(frame.Frame, frame.ShellFrameMixin):
         cancel = self.bufferSuggestSave()
         if cancel:
             return cancel
-        #self.bufferCreate()
-        self.clear()
+        self.sliceshell.clear()
         self.SetTitle( 'PySlices')
         self.sliceshell.NeedsCheckForSave=False
         self.sliceshell.SetSavePoint()
         self.buffer.doc = document.Document()
         self.buffer.name = 'This shell'
         self.buffer.modulename = self.buffer.doc.filebase
+        #self.bufferCreate()
         cancel = False
         return cancel
 
