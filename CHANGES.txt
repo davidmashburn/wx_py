@@ -1,3 +1,10 @@
+0.9.8.11 (4/30/2013)
+--------------------
+Minor bugfix related to strings like '\''
+Minor bugfix for sliceshell.py
+Lots of beind-the-scenes changes with move to git version control.
+Source is now hosted at github and bitbucket (and google code and gitorious)
+
 0.9.8.10 (3/27/2012)
 -------------------
 Fixed a bug when loading SymPySlices Files
