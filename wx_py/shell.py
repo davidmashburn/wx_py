@@ -159,7 +159,7 @@ Ctrl+H            "hide" lines containing selection / "unhide"
 F12               on/off "free-edit" mode
 """
 
-class ShellFacade:
+class ShellFacade(object):
     """Simplified interface to all shell-related functionality.
 
     This is a semi-transparent facade, in that all attributes of other

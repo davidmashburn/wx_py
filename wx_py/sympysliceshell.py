@@ -581,7 +581,7 @@ Shift+Return      ""
 2 Returns in a row   Run command in slice
 """
 
-class SlicesShellFacade:
+class SlicesShellFacade(object):
     """Simplified interface to all shell-related functionality.
 
     This is a semi-transparent facade, in that all attributes of other

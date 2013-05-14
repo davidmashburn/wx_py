@@ -14,7 +14,7 @@ class DispatcherError(exceptions.Exception):
         self.args = args
 
 
-class Parameter:
+class Parameter(object):
     """Used to represent default parameter values."""
     def __repr__(self):
         return self.__class__.__name__
@@ -198,7 +198,7 @@ def safeRef(object):
     return weakref.ref(object, _removeReceiver)
 
 
-class BoundMethodWeakref:
+class BoundMethodWeakref(object):
     """BoundMethodWeakref class."""
 
     def __init__(self, boundMethod):

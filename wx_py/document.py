@@ -7,7 +7,7 @@ __revision__ = "$Revision$"[11:-2]
 import os
 
 
-class Document:
+class Document(object):
     """Document class."""
 
     def __init__(self, filename=None):

@@ -570,7 +570,7 @@ class EditorShellNotebook(wx.Notebook):
             self.shell.SetFocus()
 
 
-class Editor:
+class Editor(object):
     """Editor having an EditWindow."""
 
     def __init__(self, parent, id=-1, pos=wx.DefaultPosition,
@@ -739,7 +739,7 @@ class EditWindow(editwindow.EditWindow):
         self.editor = editor
 
 
-class DialogResults:
+class DialogResults(object):
     """DialogResults class."""
 
     def __init__(self, returned):

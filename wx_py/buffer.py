@@ -12,7 +12,7 @@ import sys
 import document
 
 
-class Buffer:
+class Buffer(object):
     """Buffer class."""
 
     id = 0

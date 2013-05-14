@@ -5,7 +5,7 @@ __cvsid__ = "$Id$"
 __revision__ = "$Revision$"[11:-2]
 
 
-class PseudoKeyword:
+class PseudoKeyword(object):
     """A callable class that calls a method passed as a parameter.
 
     Good for creating a pseudo keyword in the python runtime
@@ -41,7 +41,7 @@ class PseudoKeyword:
         return ''
 
 
-class PseudoFile:
+class PseudoFile(object):
 
     def __init__(self):
         """Create a file-like object."""

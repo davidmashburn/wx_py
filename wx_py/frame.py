@@ -749,7 +749,7 @@ class Frame(wx.Frame):
 
 
 
-class ShellFrameMixin:
+class ShellFrameMixin(object):
     """
     A mix-in class for frames that will have a Shell or a Crust window
     and that want to add history, startupScript and other common
