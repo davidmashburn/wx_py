@@ -213,8 +213,8 @@ class SlicesShellFrame(frame.Frame, frame.ShellFrameMixin):
                'Yet another Python shell, only flakier.\n\n' + \
                'Half-baked by Patrick K. O\'Brien,\n' + \
                'the other half is still in the oven.\n\n' + \
-               'Shell Revision: %s\n' % self.shell.revision + \
-               'Interpreter Revision: %s\n\n' % self.shell.interp.revision + \
+               'Shell Revision: %s\n' % self.sliceshell.revision + \
+               'Interpreter Revision: %s\n\n' % self.sliceshell.interp.revision + \
                'Platform: %s\n' % sys.platform + \
                'Python Version: %s\n' % sys.version.split()[0] + \
                'wxPython Version: %s\n' % wx.VERSION_STRING + \
@@ -3045,7 +3045,7 @@ class SlicesShell(editwindow.EditWindow):
 
     def run(self, command, prompt=True, verbose=True):
         """Execute command as if it was typed in directly.
-        >>> shell.run('print "this"')
+        >>> sliceshell.run('print "this"')
         >>> print "this"
         this
         >>>
@@ -3065,7 +3065,7 @@ class SlicesShell(editwindow.EditWindow):
         try:
             self.prompt()
             for command in file.readlines():
-                if command[:6] == 'shell.':
+                if command[:6] == 'sliceshell.':
                     # Run shell methods silently.
                     self.run(command, prompt=False, verbose=False)
                 else:
