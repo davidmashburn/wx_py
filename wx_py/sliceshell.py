@@ -2696,6 +2696,11 @@ class SlicesShell(editwindow.EditWindow):
                 pass # FIX MARKER!!
             # FIX ME
     
+    def handleMarkersAfterWrite( self, markertype, num_new_lines,
+                                 start_line_num, oldStartMarkers ):
+        '''This function handles all the marker manupulation that
+           accompanies adding or removing new lines of text'''
+    
     def write(self,text,markertype='Input',silent=False):
         """Display text in the slices shell.
 
@@ -2766,24 +2771,22 @@ class SlicesShell(editwindow.EditWindow):
                 self.MarkerAdd(start_line_num,GROUPING_START)
                 
                 self.clearIOMarkers(start_line_num)
-                self.MarkerAdd(start_line_num,start)
-                if markertype in ['Output','Error']: self.MarkerAdd(start_line_num,OUTPUT_BG)
+                self.MarkerAddwithBG(start_line_num,start,markertype)
             else:
-                previous_marker=self.MarkerGet(previous_line_num)
+                previous_marker = self.MarkerGet(previous_line_num)
                 if previous_marker & opposite_middle_mask:
                     badMarkers=True
             
             if next_line_num==None:
                 self.MarkerAdd(end_line_num,GROUPING_END)
-                self.MarkerAdd(end_line_num,end)
-                if markertype in ['Output','Error']: self.MarkerAdd(end_line_num,OUTPUT_BG)
+                self.MarkerAddwithBG(end_line_num,end,markertype)
                 fixEndMarkers=False
                 # May be overwritten below if start_line_num==end_line_num...
             else:
                 next_marker=self.MarkerGet(next_line_num)
-                fixEndMarkers=True
+                fixEndMarkers = True
                 if next_marker & ( opposite_middle_mask | opposite_end_mask ):
-                    badMarkers=True
+                    badMarkers = True
             
             if not badMarkers:
                 # ensure previous_line only has one marker & turn end into middle
@@ -2810,8 +2813,8 @@ class SlicesShell(editwindow.EditWindow):
                     
                     if previous_marker & 1<<end :
                         self.MarkerDelete(previous_line_num,end)
-                        self.MarkerAdd(previous_line_num,middle) # ONLY CHANGING CASE
-                        if markertype in ['Output','Error']: self.MarkerAdd(previous_line_num,OUTPUT_BG)
+                        # ONLY CHANGING CASE
+                        self.MarkerAddwithBG(previous_line_num,middle,markertype)
                     elif previous_marker & opposite_middle_mask :
                          # BAD CASE
                         if markertype=='Input' and not silent:
@@ -2833,15 +2836,13 @@ class SlicesShell(editwindow.EditWindow):
                             if start_line_num==end_line_num:
                                 fixIOEnd=False
                         self.clearIOMarkers(start_line_num)
-                        self.MarkerAdd(start_line_num,start)
-                        if markertype in ['Output','Error']: self.MarkerAdd(start_line_num,OUTPUT_BG)
+                        self.MarkerAddwithBG(start_line_num,start,markertype)
                     else:
                         if next_line_num!=None:
                             self.clearGroupingMarkers(start_line_num)
                             self.clearIOMarkers(start_line_num)
                             self.MarkerAdd(start_line_num,GROUPING_MIDDLE)
-                            self.MarkerAdd(start_line_num,middle)
-                            if markertype in ['Output','Error']: self.MarkerAdd(start_line_num,OUTPUT_BG)
+                            self.MarkerAddwithBG(start_line_num,middle,markertype)
                             # This may be overwritten if start_line_num==end_line_num
                 
                 # Take care of all the middle lines...
@@ -2851,8 +2852,7 @@ class SlicesShell(editwindow.EditWindow):
                     self.MarkerAdd(i,GROUPING_MIDDLE)
                     
                     self.clearIOMarkers(i)
-                    self.MarkerAdd(i,middle)
-                    if markertype in ['Output','Error']: self.MarkerAdd(i,OUTPUT_BG)
+                    self.MarkerAddwithBG(i,middle,markertype)
                 
                 if fixEndMarkers:
                     # Take care of the end_line if we haven't already done so...
@@ -2876,18 +2876,14 @@ class SlicesShell(editwindow.EditWindow):
                     
                     if fixIOEnd: 
                         if next_marker & ( 1<<start | 1<<start_folded ) :
-                            self.MarkerAdd(end_line_num,end)
-                            if markertype in ['Output','Error']: self.MarkerAdd(end_line_num,OUTPUT_BG)
+                            self.MarkerAddwithBG(end_line_num,end,markertype)
                         elif next_marker & ( 1<<middle | 1<<end ) :
-                            self.MarkerAdd(end_line_num,middle)
-                            if markertype in ['Output','Error']: self.MarkerAdd(end_line_num,OUTPUT_BG)
+                            self.MarkerAddwithBG(end_line_num,middle,markertype)
                         elif next_marker & ( opposite_start_mask |
                                              opposite_start_folded_mask ):
-                            self.MarkerAdd(end_line_num,end)
-                            if markertype in ['Output','Error']: self.MarkerAdd(end_line_num,OUTPUT_BG)
+                            self.MarkerAddwithBG(end_line_num,end,markertype)
                         else:
-                            self.MarkerAdd(end_line_num,start_folded)
-                            if markertype in ['Output','Error']: self.MarkerAdd(end_line_num,OUTPUT_BG)
+                            self.MarkerAddwithBG(end_line_num,start_folded,markertype)
                             if markertype=='Input' and not silent:
                                 #print 'BAD MARKERS!'
                                 pass
