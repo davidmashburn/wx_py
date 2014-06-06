@@ -2696,27 +2696,17 @@ class SlicesShell(editwindow.EditWindow):
                 pass # FIX MARKER!!
             # FIX ME
     
-    def handleMarkersAfterWrite( self, markertype, num_new_lines,
-                                 start_line_num, oldStartMarkers ):
+    def handleMarkersAfterWrite(self,markertype,num_new_lines):
         '''This function handles all the marker manupulation that
            accompanies adding or removing new lines of text'''
-    
-    def write(self,text,markertype='Input',silent=False):
-        """Display text in the slices shell.
-
-        Replace line endings with OS-specific endings."""
-        text = self.fixLineEndings(text)
-        split=text.split(os.linesep)
-        self.AddText(text)
         
-        # This part handles all the marker stuff that accompanies
-        # adding or removing new lines of text...
+        if num_new_lines==0 or markertype==None:
+            return # Do nothing if typing within a line or markertype is None
+        
         # Get the total number of lines in the Document == last line number
         last_line_num=self.GetLineCount()-1
         # Get the line number we ended on in the write
         end_line_num=self.GetCurrentLine()
-        # Get the number of returns we are using == number of lines we pasted -1
-        num_new_lines=text.count(os.linesep)
         # So if num_new_lines==0, start_line_num and end_line_num are the same
         start_line_num=end_line_num-num_new_lines+1
         
@@ -2755,142 +2745,165 @@ class SlicesShell(editwindow.EditWindow):
             opposite_middle_mask = 1<<INPUT_MIDDLE # To test for bad writes...
             opposite_end_mask = 1<<INPUT_END # To test for bad writes...
         
-        if num_new_lines>0 and markertype!=None: #Do nothing if typing within a line...
-            # Update the Grouping Markers
-            # For the previous line and the start_line
-            # Test to make sure we can write ... but not here ...
-            #    test this before we call write or before we add text...
-            # So we assume it already obeys the rules 
+        # Update the Grouping Markers
+        # For the previous line and the start_line
+        # Test to make sure we can write ... but not here ...
+        #    test this before we call write or before we add text...
+        # So we assume it already obeys the rules 
+        
+        badMarkers=False
+        fixIOEnd=True
+        
+        if previous_line_num==None:
+            # This is an impossible case, here just for completeness...
+            self.clearGroupingMarkers(start_line_num)
+            self.MarkerAdd(start_line_num,GROUPING_START)
             
-            badMarkers=False
-            fixIOEnd=True
-            
-            if previous_line_num==None:
-                # This is an impossible case, here just for completeness...
-                self.clearGroupingMarkers(start_line_num)
-                self.MarkerAdd(start_line_num,GROUPING_START)
+            self.clearIOMarkers(start_line_num)
+            self.MarkerAddwithBG(start_line_num,start,markertype)
+        else:
+            previous_marker = self.MarkerGet(previous_line_num)
+            if previous_marker & opposite_middle_mask:
+                badMarkers=True
+        
+        if next_line_num==None:
+            self.MarkerAdd(end_line_num,GROUPING_END)
+            self.MarkerAddwithBG(end_line_num,end,markertype)
+            fixEndMarkers=False
+            # May be overwritten below if start_line_num==end_line_num...
+        else:
+            next_marker=self.MarkerGet(next_line_num)
+            fixEndMarkers = True
+            if next_marker & ( opposite_middle_mask | opposite_end_mask ):
+                badMarkers = True
+        
+        if not badMarkers:
+            # ensure previous_line only has one marker & turn end into middle
+            if previous_line_num!=None:
+                # Adjust previous line appropriately, ensure only one marker
+                # Only print errors if we are on input!
+                blank=False
+                blank=blank or self.ensureSingleGroupingMarker(previous_line_num)
+                blank=blank or self.ensureSingleIOMarker(previous_line_num)
                 
-                self.clearIOMarkers(start_line_num)
-                self.MarkerAddwithBG(start_line_num,start,markertype)
-            else:
-                previous_marker = self.MarkerGet(previous_line_num)
-                if previous_marker & opposite_middle_mask:
-                    badMarkers=True
-            
-            if next_line_num==None:
-                self.MarkerAdd(end_line_num,GROUPING_END)
-                self.MarkerAddwithBG(end_line_num,end,markertype)
-                fixEndMarkers=False
-                # May be overwritten below if start_line_num==end_line_num...
-            else:
-                next_marker=self.MarkerGet(next_line_num)
-                fixEndMarkers = True
-                if next_marker & ( opposite_middle_mask | opposite_end_mask ):
-                    badMarkers = True
-            
-            if not badMarkers:
-                # ensure previous_line only has one marker & turn end into middle
-                if previous_line_num!=None:
-                    # Adjust previous line appropriately, ensure only one marker
-                    # Only print errors if we are on input!
-                    blank=False
-                    blank=blank or self.ensureSingleGroupingMarker(previous_line_num)
-                    blank=blank or self.ensureSingleIOMarker(previous_line_num)
-                    
-                    if blank:
-                        #if markertype=='Input' and not silent: print 'BLANK LINE!' # BAD CASE
-                        pass
-                    
-                    if previous_marker & 1<<GROUPING_END :
-                        # Make GROUPING slice continue unless we hit
-                        #  an output end and are starting a new input...
-                        if (previous_marker & OUTPUT_MASK) and markertype=='Input':
-                            pass
-                        else:
-                            self.MarkerDelete(previous_line_num,GROUPING_END)
-                            # ONLY CHANGING CASE
-                            self.MarkerAdd(previous_line_num,GROUPING_MIDDLE)
-                    
-                    if previous_marker & 1<<end :
-                        self.MarkerDelete(previous_line_num,end)
-                        # ONLY CHANGING CASE
-                        self.MarkerAddwithBG(previous_line_num,middle,markertype)
-                    elif previous_marker & opposite_middle_mask :
-                         # BAD CASE
-                        if markertype=='Input' and not silent:
-                            #print 'Should have been a bad marker!'
-                            pass
-                    
-                    # We can only add input to an input slice
-                    # And can only add output to an output slice
-                    
-                    if previous_marker & ( opposite_start_mask |
-                                           opposite_start_folded_mask |
-                                           opposite_end_mask ):
-                        if markertype=='Input':
-                            self.clearGroupingMarkers(start_line_num)
-                            self.MarkerAdd(start_line_num,GROUPING_START)
-                            if start_line_num==end_line_num:
-                                fixEndMarkers=False
-                        else:
-                            if start_line_num==end_line_num:
-                                fixIOEnd=False
-                        self.clearIOMarkers(start_line_num)
-                        self.MarkerAddwithBG(start_line_num,start,markertype)
-                    else:
-                        if next_line_num!=None:
-                            self.clearGroupingMarkers(start_line_num)
-                            self.clearIOMarkers(start_line_num)
-                            self.MarkerAdd(start_line_num,GROUPING_MIDDLE)
-                            self.MarkerAddwithBG(start_line_num,middle,markertype)
-                            # This may be overwritten if start_line_num==end_line_num
-                
-                # Take care of all the middle lines...
-                # Does nothing for only one line...
-                for i in range(start_line_num,end_line_num):
-                    self.clearGroupingMarkers(i)
-                    self.MarkerAdd(i,GROUPING_MIDDLE)
-                    
-                    self.clearIOMarkers(i)
-                    self.MarkerAddwithBG(i,middle,markertype)
-                
-                if fixEndMarkers:
-                    # Take care of the end_line if we haven't already done so...
-                    blank=False
-                    blank=blank or self.ensureSingleGroupingMarker(next_line_num)
-                    blank=blank or self.ensureSingleIOMarker(next_line_num)
-                    
-                    if blank:
-                        if markertype=='Input' and not silent:
-                            #print 'BLANK LINE!' # BAD CASE
-                            pass
-                    
-                    self.clearGroupingMarkers(end_line_num)
-                    if fixIOEnd:
-                        self.clearIOMarkers(end_line_num)
-                    
-                    if next_marker & ( 1<<GROUPING_START | 1<<GROUPING_START_FOLDED ) :
-                        self.MarkerAdd(end_line_num,GROUPING_END)
-                    elif next_marker & ( 1<<GROUPING_MIDDLE | 1<<GROUPING_END ) :
-                        self.MarkerAdd(end_line_num,GROUPING_MIDDLE)
-                    
-                    if fixIOEnd: 
-                        if next_marker & ( 1<<start | 1<<start_folded ) :
-                            self.MarkerAddwithBG(end_line_num,end,markertype)
-                        elif next_marker & ( 1<<middle | 1<<end ) :
-                            self.MarkerAddwithBG(end_line_num,middle,markertype)
-                        elif next_marker & ( opposite_start_mask |
-                                             opposite_start_folded_mask ):
-                            self.MarkerAddwithBG(end_line_num,end,markertype)
-                        else:
-                            self.MarkerAddwithBG(end_line_num,start_folded,markertype)
-                            if markertype=='Input' and not silent:
-                                #print 'BAD MARKERS!'
-                                pass
-            else:
-                if markertype=='Input' and not silent:
-                    #print 'BAD MARKERS!!!'
+                if blank:
+                    #if markertype=='Input' and not silent: print 'BLANK LINE!' # BAD CASE
                     pass
+                
+                if previous_marker & 1<<GROUPING_END :
+                    # Make GROUPING slice continue unless we hit
+                    #  an output end and are starting a new input...
+                    if (previous_marker & OUTPUT_MASK) and markertype=='Input':
+                        pass
+                    else:
+                        self.MarkerDelete(previous_line_num,GROUPING_END)
+                        # ONLY CHANGING CASE
+                        self.MarkerAdd(previous_line_num,GROUPING_MIDDLE)
+                
+                if previous_marker & 1<<end :
+                    self.MarkerDelete(previous_line_num,end)
+                    # ONLY CHANGING CASE
+                    self.MarkerAddwithBG(previous_line_num,middle,markertype)
+                elif previous_marker & opposite_middle_mask :
+                     # BAD CASE
+                    if markertype=='Input' and not silent:
+                        #print 'Should have been a bad marker!'
+                        pass
+                
+                # We can only add input to an input slice
+                # And can only add output to an output slice
+                
+                if previous_marker & ( opposite_start_mask |
+                                       opposite_start_folded_mask |
+                                       opposite_end_mask ):
+                    if markertype=='Input':
+                        self.clearGroupingMarkers(start_line_num)
+                        self.MarkerAdd(start_line_num,GROUPING_START)
+                        if start_line_num==end_line_num:
+                            fixEndMarkers=False
+                    else:
+                        if start_line_num==end_line_num:
+                            fixIOEnd=False
+                    self.clearIOMarkers(start_line_num)
+                    self.MarkerAddwithBG(start_line_num,start,markertype)
+                else:
+                    if next_line_num!=None:
+                        self.clearGroupingMarkers(start_line_num)
+                        self.clearIOMarkers(start_line_num)
+                        self.MarkerAdd(start_line_num,GROUPING_MIDDLE)
+                        self.MarkerAddwithBG(start_line_num,middle,markertype)
+                        # This may be overwritten if start_line_num==end_line_num
+            
+            # Take care of all the middle lines...
+            # Does nothing for only one line...
+            for i in range(start_line_num,end_line_num):
+                self.clearGroupingMarkers(i)
+                self.MarkerAdd(i,GROUPING_MIDDLE)
+                
+                self.clearIOMarkers(i)
+                self.MarkerAddwithBG(i,middle,markertype)
+            
+            if fixEndMarkers:
+                # Take care of the end_line if we haven't already done so...
+                blank=False
+                blank=blank or self.ensureSingleGroupingMarker(next_line_num)
+                blank=blank or self.ensureSingleIOMarker(next_line_num)
+                
+                if blank:
+                    if markertype=='Input' and not silent:
+                        #print 'BLANK LINE!' # BAD CASE
+                        pass
+                
+                self.clearGroupingMarkers(end_line_num)
+                if fixIOEnd:
+                    self.clearIOMarkers(end_line_num)
+                
+                if next_marker & ( 1<<GROUPING_START | 1<<GROUPING_START_FOLDED ) :
+                    self.MarkerAdd(end_line_num,GROUPING_END)
+                elif next_marker & ( 1<<GROUPING_MIDDLE | 1<<GROUPING_END ) :
+                    self.MarkerAdd(end_line_num,GROUPING_MIDDLE)
+                
+                if fixIOEnd: 
+                    if next_marker & ( 1<<start | 1<<start_folded ) :
+                        self.MarkerAddwithBG(end_line_num,end,markertype)
+                    elif next_marker & ( 1<<middle | 1<<end ) :
+                        self.MarkerAddwithBG(end_line_num,middle,markertype)
+                    elif next_marker & ( opposite_start_mask |
+                                         opposite_start_folded_mask ):
+                        self.MarkerAddwithBG(end_line_num,end,markertype)
+                    else:
+                        self.MarkerAddwithBG(end_line_num,start_folded,markertype)
+                        if markertype=='Input' and not silent:
+                            #print 'BAD MARKERS!'
+                            pass
+        else:
+            if markertype=='Input' and not silent:
+                #print 'BAD MARKERS!!!'
+                pass
+    
+    def write(self,text,markertype='Input',silent=False):
+        """Display text in the slices shell.
+           Replace line endings with OS-specific endings."""
+        
+        cur_line_num = self.GetCurrentLine()
+        
+        text = self.fixLineEndings(text)
+        split = text.split(os.linesep)
+        num_new_lines = text.count(os.linesep)
+        
+        # Save the current markers on this line and then clear them
+        oldMarkers = self.MarkerGet(cur_line_num)
+        self.clearGroupingMarkers()
+        self.clearIOMarkers()
+        
+        # Actually write the text
+        self.AddText(text)
+        
+        # Reinstate the markers after adding the text
+        self.MarkerSet(cur_line_num,oldMarkers)
+        
+        # Do all the marker magic that make PySlices look like a notebook
+        self.handleMarkersAfterWrite(markertype,num_new_lines)
         
         self.EnsureCaretVisible()
         
