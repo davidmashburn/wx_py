@@ -22,57 +22,57 @@ def getAutoCompleteList(command='', locals=None, includeMagic=1,
     root = getRoot(command, terminator='.')
     try:
         if locals is not None:
-            object = eval(root, locals)
+            obj = eval(root, locals)
         else:
-            object = eval(root)
+            obj = eval(root)
     except:
         pass
     else:
-        attributes = getAttributeNames(object, includeMagic, 
+        attributes = getAttributeNames(obj, includeMagic, 
                                        includeSingle, includeDouble)
     return attributes
-    
-def getAttributeNames(object, includeMagic=1, includeSingle=1,
+
+def getAttributeNames(obj, includeMagic=1, includeSingle=1,
                       includeDouble=1):
-    """Return list of unique attributes, including inherited, for object."""
+    """Return list of unique attributes, including inherited, for obj."""
     attributes = []
     dict = {}
-    if not hasattrAlwaysReturnsTrue(object):
+    if not hasattrAlwaysReturnsTrue(obj):
         # Add some attributes that don't always get picked up.
         special_attrs = ['__bases__', '__class__', '__dict__', '__name__',
                          'func_closure', 'func_code', 'func_defaults',
                          'func_dict', 'func_doc', 'func_globals', 'func_name']
         attributes += [attr for attr in special_attrs \
-                       if hasattr(object, attr)]
+                       if hasattr(obj, attr)]
     if includeMagic:
-        try: attributes += object._getAttributeNames()
+        try: attributes += obj._getAttributeNames()
         except: pass
         # Special code to allow traits to be caught by autocomplete
-        if hasattr(object,'trait_get'):
+        if hasattr(obj,'trait_get'):
             try:
-                for i in object.trait_get().keys():
+                for i in obj.trait_get().keys():
                     if i not in attributes:
-                        if hasattr(object, i):
+                        if hasattr(obj, i):
                             attributes += i
             except:
                 pass
     # Get all attribute names.
-    str_type = str(type(object))
+    str_type = str(type(obj))
     if str_type == "<type 'array'>":
-        attributes += dir(object)
+        attributes += dir(obj)
     else:
-        attrdict = getAllAttributeNames(object)
-        # Store the object's dir.
-        object_dir = dir(object)
+        attrdict = getAllAttributeNames(obj)
+        # Store the obj's dir.
+        obj_dir = dir(obj)
         for (obj_type_name, technique, count), attrlist in attrdict.items():
             # This complexity is necessary to avoid accessing all the
             # attributes of the object.  This is very handy for objects
             # whose attributes are lazily evaluated.
-            if type(object).__name__ == obj_type_name and technique == 'dir':
+            if type(obj).__name__ == obj_type_name and technique == 'dir':
                 attributes += attrlist
             else:
                 attributes += [attr for attr in attrlist \
-                               if attr not in object_dir and hasattr(object, attr)]
+                               if attr not in obj_dir and hasattr(obj, attr)]
             
     # Remove duplicates from the attribute list.
     for item in attributes:
@@ -90,10 +90,10 @@ def getAttributeNames(object, includeMagic=1, includeSingle=1,
         attributes = filter(lambda item: item[:2]!='__', attributes)
     return attributes
 
-def hasattrAlwaysReturnsTrue(object):
-    return hasattr(object, 'bogu5_123_aTTri8ute')
+def hasattrAlwaysReturnsTrue(obj):
+    return hasattr(obj, 'bogu5_123_aTTri8ute')
 
-def getAllAttributeNames(object):
+def getAllAttributeNames(obj):
     """Return dict of all attributes, including inherited, for an object.
     
     Recursively walk through a class and all base classes.
@@ -107,30 +107,30 @@ def getAllAttributeNames(object):
     try:
         # This could(?) fail if the type is poorly defined without
         # even a name.
-        key = type(object).__name__
+        key = type(obj).__name__
     except:
         key = 'anonymous'
     # Wake up sleepy objects - a hack for ZODB objects in "ghost" state.
-    wakeupcall = dir(object)
+    wakeupcall = dir(obj)
     del wakeupcall
     # Get attributes available through the normal convention.
-    attributes = dir(object)
+    attributes = dir(obj)
     attrdict[(key, 'dir', len(attributes))] = attributes
     # Get attributes from the object's dictionary, if it has one.
     try:
-        attributes = object.__dict__.keys()
+        attributes = obj.__dict__.keys()
         attributes.sort()
-    except:  # Must catch all because object might have __getattr__.
+    except:  # Must catch all because obj might have __getattr__.
         pass
     else:
         attrdict[(key, '__dict__', len(attributes))] = attributes
     # For a class instance, get the attributes for the class.
     try:
-        klass = object.__class__
-    except:  # Must catch all because object might have __getattr__.
+        klass = obj.__class__
+    except:  # Must catch all because obj might have __getattr__.
         pass
     else:
-        if klass is object:
+        if klass is obj:
             # Break a circular reference. This happens with extension
             # classes.
             pass
@@ -138,8 +138,8 @@ def getAllAttributeNames(object):
             attrdict.update(getAllAttributeNames(klass))
     # Also get attributes from any and all parent classes.
     try:
-        bases = object.__bases__
-    except:  # Must catch all because object might have __getattr__.
+        bases = obj.__bases__
+    except:  # Must catch all because obj might have __getattr__.
         pass
     else:
         if isinstance(bases, types.TupleType):
@@ -160,25 +160,25 @@ def getCallTip(command='', locals=None):
     root = getRoot(command, terminator='(')
     try:
         if locals is not None:
-            object = eval(root, locals)
+            obj = eval(root, locals)
         else:
-            object = eval(root)
+            obj = eval(root)
     except:
         return calltip
     name = ''
-    object, dropSelf = getBaseObject(object)
+    obj, dropSelf = getBaseObject(obj)
     try:
-        name = object.__name__
+        name = obj.__name__
     except AttributeError:
         pass
     tip1 = ''
     argspec = ''
-    if inspect.isbuiltin(object):
+    if inspect.isbuiltin(obj):
         # Builtin functions don't have an argspec that we can get.
         pass
-    elif inspect.isfunction(object):
+    elif inspect.isfunction(obj):
         # tip1 is a string like: "getCallTip(command='', locals=None)"
-        argspec = apply(inspect.formatargspec, inspect.getargspec(object))
+        argspec = apply(inspect.formatargspec, inspect.getargspec(obj))
         if dropSelf:
             # The first parameter to a method is a reference to an
             # instance, usually coded as "self", and is usually passed
@@ -192,9 +192,9 @@ def getCallTip(command='', locals=None):
                 argspec = '(' + ','.join(temp[1:]).lstrip()
         tip1 = name + argspec
     doc = ''
-    if callable(object):
+    if callable(obj):
         try:
-            doc = inspect.getdoc(object)
+            doc = inspect.getdoc(obj)
         except:
             pass
     if doc:
@@ -338,51 +338,51 @@ def rtrimTerminus(command, terminator=None):
             command = terminator.join(pieces[:-1]) + terminator
     return command
 
-def getBaseObject(object):
+def getBaseObject(obj):
     """Return base object and dropSelf indicator for an object."""
-    if inspect.isbuiltin(object):
+    if inspect.isbuiltin(obj):
         # Builtin functions don't have an argspec that we can get.
         dropSelf = 0
-    elif inspect.ismethod(object):
+    elif inspect.ismethod(obj):
         # Get the function from the object otherwise
         # inspect.getargspec() complains that the object isn't a
         # Python function.
         try:
-            if object.im_self is None:
+            if obj.im_self is None:
                 # This is an unbound method so we do not drop self
                 # from the argspec, since an instance must be passed
                 # as the first arg.
                 dropSelf = 0
             else:
                 dropSelf = 1
-            object = object.im_func
+            obj = obj.im_func
         except AttributeError:
             dropSelf = 0
-    elif inspect.isclass(object):
+    elif inspect.isclass(obj):
         # Get the __init__ method function for the class.
-        constructor = getConstructor(object)
+        constructor = getConstructor(obj)
         if constructor is not None:
-            object = constructor
+            obj = constructor
             dropSelf = 1
         else:
             dropSelf = 0
-    elif callable(object):
+    elif callable(obj):
         # Get the __call__ method instead.
         try:
-            object = object.__call__.im_func
+            obj = obj.__call__.im_func
             dropSelf = 1
         except AttributeError:
             dropSelf = 0
     else:
         dropSelf = 0
-    return object, dropSelf
+    return obj, dropSelf
 
-def getConstructor(object):
+def getConstructor(obj):
     """Return constructor for class object, or None if there isn't one."""
     try:
-        return object.__init__.im_func
+        return obj.__init__.im_func
     except AttributeError:
-        for base in object.__bases__:
+        for base in obj.__bases__:
             constructor = getConstructor(base)
             if constructor is not None:
                 return constructor

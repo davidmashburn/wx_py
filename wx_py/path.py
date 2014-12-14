@@ -15,8 +15,8 @@ def cd(path,usePrint=True):
     if usePrint:
         pwd()
 
-def ls(str='*',fullpath=False):
-    g=glob.glob(os.path.expandvars(os.path.expanduser(str)))
+def ls(s='*',fullpath=False):
+    g=glob.glob(os.path.expandvars(os.path.expanduser(s)))
     if fullpath:
         for i in g:
             print i
@@ -30,7 +30,7 @@ def ls(str='*',fullpath=False):
 # freeze!
 # If you want this kind of behavior to be available, please use ipython
 # This is NOT a feature or goal of the Py project!
-def sx(str=''):
-    print commands.getoutput(str)
+def sx(s=''):
+    print commands.getoutput(s)
 
 #cd('~',usePrint=False)
