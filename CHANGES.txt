@@ -1,3 +1,9 @@
+0.9.8.12 (4/12/2015)
+--------------------
+Work in progress towards fixing wxPython 3.0 compatibility problems;
+ this is nominally working, but still has rough edges.
+A lot of internal refactoring (stop abusing keywords, etc.)
+
 0.9.8.11 (4/30/2013)
 --------------------
 Minor bugfix related to strings like '\''
